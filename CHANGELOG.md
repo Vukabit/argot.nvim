@@ -26,3 +26,7 @@ Everything in the manual works:
 - integrations: cached statusline component, opt-in extmark highlighting
   of known terms (case-policy aware), telescope extension with copy/move/
   delete mappings
+- cross-links: `[[term]]` references between definitions; follow with gd
+  or Enter (undefined targets open prefilled, so glossaries can be written
+  links-first), complete after `[[` with CTRL-X CTRL-O, dangling links
+  reported by doctor

@@ -152,9 +152,9 @@ subcommands (terms, tags, files, and help topics all complete).
   :Gloss doctor                                 *:Gloss-doctor*
       A read-only report of things silently wrong: damaged glossary lines
       (kept verbatim on writes), duplicate terms within a file (union
-      merges), the same term defined in several stores, stale registry
-      roots, and pending relinks. Every finding names the command that
-      fixes it.
+      merges), the same term defined in several stores, dangling
+      `[[links]]` (|gloss-links|), stale registry roots, and pending
+      relinks. Every finding names the command that fixes it.
 
 ==============================================================================
 4. KEYMAPS                                      *gloss-keymaps*
@@ -220,6 +220,14 @@ the markdown definition: >
 All four header keys are always shown; empty values are fine. Editing the
 `term:` line renames the entry on the next write. A new entry asks which
 store to save to (project or global) on its first write.
+
+                                                *gloss-links*
+Definitions can reference each other with `[[term]]` links. In the
+definition buffer: `gd` or <CR> on a link follows it (a link to a term
+that is not defined yet opens a prefilled new-entry buffer, so glossaries
+can be written links-first); CTRL-X CTRL-O after typing `[[` completes
+known term names and closes the brackets. Dangling links show up in
+`:Gloss doctor`. Links render underlined (highlight group GlossLink).
 
 ==============================================================================
 6. CONFIGURATION                                *gloss.setup* *gloss-config*
