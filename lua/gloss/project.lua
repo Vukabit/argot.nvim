@@ -441,6 +441,51 @@ function M.gc(ids)
   return removed
 end
 
+--- Clean-slate the global dictionary: the DB is moved into backups/,
+--- never deleted. Caller confirms.
+---@return {existed: boolean, backup?: string}
+function M.reset_global()
+  local paths = M.data_paths()
+  if not vim.uv.fs_stat(paths.global_db) then
+    return { existed = false }
+  end
+  vim.fn.mkdir(paths.backups, "p")
+  local backup = vim.fs.joinpath(paths.backups, ("global-reset-%s.db"):format(os.date("!%Y%m%d%H%M%S")))
+  local ok, err = vim.uv.fs_rename(paths.global_db, backup)
+  if not ok then
+    error(
+      ("gloss: could not move the global DB aside (%s); nothing was deleted"):format(err or "unknown error")
+    )
+  end
+  for _, suffix in ipairs({ "-wal", "-shm" }) do
+    vim.uv.fs_unlink(paths.global_db .. suffix)
+  end
+  M.close_handles()
+  return { existed = true, backup = backup }
+end
+
+--- The nuclear option: move ALL gloss data (global DB, every project DB,
+--- the registry, AI consent) into a timestamped folder under backups/.
+--- Nothing is deleted; in-repo glossaries are repo files and are untouched.
+--- Caller confirms (hard).
+---@return {moved: integer, dest: string}
+function M.reset_all()
+  local paths = M.data_paths()
+  local dest = vim.fs.joinpath(paths.backups, ("reset-%s"):format(os.date("!%Y%m%d%H%M%S")))
+  vim.fn.mkdir(dest, "p")
+  local moved = 0
+  for name in vim.fs.dir(paths.dir) do
+    if name ~= "backups" then
+      local ok = vim.uv.fs_rename(vim.fs.joinpath(paths.dir, name), vim.fs.joinpath(dest, name))
+      if ok then
+        moved = moved + 1
+      end
+    end
+  end
+  M.close_handles()
+  return { moved = moved, dest = dest }
+end
+
 --- The project store, registering the project first if needed.
 ---@param startpath string?
 ---@return table store, table desc

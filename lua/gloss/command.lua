@@ -20,6 +20,7 @@ local SUBCOMMANDS = {
   "import",
   "ai",
   "highlight",
+  "reset",
   "doctor",
   "help",
 }
@@ -148,6 +149,65 @@ handlers.init = function(cmd)
     events.emit("GlossStoreChanged", {})
   else
     vim.notify(("gloss: project already registered (%s)"):format(res.path))
+  end
+end
+
+handlers.reset = function(cmd)
+  local project = require("gloss.project")
+  local events = require("gloss.events")
+  local scope = cmd.fargs[2]
+  if scope == "project" then
+    local desc = project.resolve()
+    if desc.mode == "in_repo" then
+      vim.notify(
+        "gloss: in-repo glossaries belong to the repo; remove " .. desc.path .. " with git instead",
+        vim.log.levels.WARN
+      )
+      return
+    end
+    if not desc.registry_id then
+      vim.notify("gloss: this project has no glossary to reset", vim.log.levels.INFO)
+      return
+    end
+    if vim.fn.confirm("Retire this project's glossary? (its DB is backed up first)", "&Yes\n&No", 2) ~= 1 then
+      return
+    end
+    local removed = project.gc({ desc.registry_id })
+    events.emit("GlossStoreChanged", {})
+    vim.notify(removed == 1 and "gloss: project glossary retired (backup kept)" or "gloss: nothing retired")
+  elseif scope == "global" then
+    if vim.fn.confirm("Reset the GLOBAL dictionary? (it is moved into backups/)", "&Yes\n&No", 2) ~= 1 then
+      return
+    end
+    local ok, res = pcall(project.reset_global)
+    if not ok then
+      vim.notify("gloss: " .. tostring(res), vim.log.levels.ERROR)
+      return
+    end
+    events.emit("GlossStoreChanged", {})
+    vim.notify(
+      res.existed and ("gloss: global dictionary moved to " .. res.backup)
+        or "gloss: no global dictionary yet"
+    )
+  elseif scope == "all" then
+    local typed = vim.fn.input(
+      "Type 'wipe' to move ALL gloss data (global, every project, registry, AI consent) into backups/: "
+    )
+    if typed ~= "wipe" then
+      vim.notify("gloss: reset cancelled", vim.log.levels.INFO)
+      return
+    end
+    local ok, res = pcall(project.reset_all)
+    if not ok then
+      vim.notify("gloss: " .. tostring(res), vim.log.levels.ERROR)
+      return
+    end
+    events.emit("GlossStoreChanged", {})
+    vim.notify(
+      ("gloss: clean slate; previous data archived at %s (in-repo glossaries untouched)"):format(res.dest)
+    )
+  else
+    vim.notify("gloss: usage is :Gloss reset project|global|all", vim.log.levels.ERROR)
   end
 end
 
@@ -334,6 +394,9 @@ local ARG_CANDIDATES = {
   end,
   highlight = function()
     return { "on", "off", "toggle" }
+  end,
+  reset = function()
+    return { "project", "global", "all" }
   end,
   export = function(arglead)
     return vim.fn.getcompletion(arglead, "file")

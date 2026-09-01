@@ -92,6 +92,41 @@ T["gc retires only chosen stale entries and keeps a backup"] = function()
   eq(#backups, 1)
 end
 
+T["reset_global archives the DB instead of deleting it"] = function()
+  if not has_sqlite then
+    MiniTest.skip("sqlite.lua not available")
+  end
+  eq(project.reset_global().existed, false)
+  project.global_store():upsert({ term = "G", definition = "d" })
+  project.close_handles()
+  local res = project.reset_global()
+  eq(res.existed, true)
+  eq(vim.uv.fs_stat(res.backup) ~= nil, true)
+  eq(vim.uv.fs_stat(project.data_paths().global_db), nil)
+  -- a fresh global starts empty
+  eq(#project.global_store():list(), 0)
+end
+
+T["reset_all archives everything except backups, leaving a clean slate"] = function()
+  if not has_sqlite then
+    MiniTest.skip("sqlite.lua not available")
+  end
+  local root = vim.fs.joinpath(tmpdir, "doomed")
+  vim.fn.mkdir(root, "p")
+  project.store_for(project.register(root)):upsert({ term = "A", definition = "d" })
+  project.global_store():upsert({ term = "G", definition = "d" })
+  require("gloss.ai").set_consent(root, true)
+
+  local res = project.reset_all()
+  eq(res.moved >= 3, true) -- projects.json, projects/, global.db, consent
+  eq(vim.fn.filereadable(vim.fs.joinpath(res.dest, "projects.json")), 1)
+  eq(vim.fn.isdirectory(vim.fs.joinpath(res.dest, "projects")), 1)
+  -- clean slate: unregistered project, empty registry, consent gone
+  eq(project.resolve(root).mode, "unregistered")
+  eq(vim.tbl_isempty(project.load_registry().projects), true)
+  eq(require("gloss.ai").consent(root), false)
+end
+
 T["export and import round-trip a project glossary"] = function()
   local root = vim.fs.joinpath(tmpdir, "exp")
   vim.fn.mkdir(root, "p")

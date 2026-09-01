@@ -154,6 +154,16 @@ subcommands (terms, tags, files, and help topics all complete).
       permanently. Highlighting honors the case policy: a stored "IT"
       never lights up the word "it".
 
+  :Gloss reset project|global|all               *:Gloss-reset*
+      The clean-slate command, in three sizes. `project` retires the
+      current project's out-of-repo glossary; `global` resets the global
+      dictionary; `all` moves every piece of gloss data (global, every
+      project DB, the registry, AI consent) into a timestamped folder
+      under backups/ and requires typing "wipe" to run. Nothing is ever
+      deleted, only archived; delete the backups yourself when sure.
+      In-repo glossaries are repository files and are never touched (use
+      git).
+
   :Gloss doctor                                 *:Gloss-doctor*
       A read-only report of things silently wrong: damaged glossary lines
       (kept verbatim on writes), duplicate terms within a file (union

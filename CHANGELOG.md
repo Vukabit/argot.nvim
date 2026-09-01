@@ -20,7 +20,9 @@ Everything in the manual works:
   one clarifying-questions round, proposals land as reviewable drafts
   marked ai / ai_edited
 - maintenance: `doctor`, `gc` (confirmed, backed up), `export`/`import`,
-  `:Gloss help`, `:checkhealth gloss`
+  `:Gloss reset project|global|all` (the nuclear option archives instead
+  of deleting; "all" requires typing "wipe"), `:Gloss help`,
+  `:checkhealth gloss`
 - keymaps: <Plug> contract, opt-in curated set with per-key overrides and
   no-clobber install; hover.nvim provider module
 - integrations: cached statusline component, opt-in extmark highlighting
