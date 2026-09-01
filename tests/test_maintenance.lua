@@ -61,9 +61,12 @@ T["doctor reports damage, duplicates, cross-store terms, and stale roots"] = fun
   vim.fn.delete(ghost, "rf")
 
   local text, problems = report_text({ startpath = root })
-  eq(problems >= 4, true)
+  eq(problems >= 3, true)
   eq(text:find("damaged line 4") ~= nil, true)
   eq(text:find("appears twice in one file") ~= nil, true)
+  -- cross-store overlap is informational (project shadows global by
+  -- design), listed but never counted as a problem
+  eq(text:find("overlap %(informational") ~= nil, true)
   eq(text:find("is defined in") ~= nil, true)
   eq(text:find("registry root no longer exists") ~= nil, true)
 end

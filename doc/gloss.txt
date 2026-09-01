@@ -77,8 +77,10 @@ subcommands (terms, tags, files, and help topics all complete).
   :Gloss list [{query}]                         *:Gloss-list*
       Picker over everything defined in the current context: the project's
       entries and the global dictionary, labeled by origin (whatever the
-      lookup chain can resolve here belongs in list). The optional query
-      uses the same grammar as search (`#tag` filters, fuzzy words).
+      lookup chain can resolve here belongs in list). Like lookup, a
+      project entry shadows a global entry with the same term; the
+      shadowed copy stays reachable through |:Gloss-search|. The optional
+      query uses the same grammar as search (`#tag` filters, fuzzy words).
       Selecting an entry opens it for editing. Other projects' glossaries
       are |:Gloss-search| and |:Gloss-projects| territory.
 

@@ -304,16 +304,30 @@ function M.local_sources(opts)
   end, M.sources(opts))
 end
 
+--- What the current context defines, resolve-chain deduplicated: a project
+--- entry shadows a global entry with the same term, exactly like lookup;
+--- the shadowed copy stays reachable through :Gloss search.
+---@param opts? {startpath?: string}
+---@return GlossSearchItem[]
+function M.context_items(opts)
+  local items, seen = {}, {}
+  -- local_sources orders project before global, so first-seen wins
+  for _, src in ipairs(M.local_sources(opts)) do
+    for _, entry in ipairs(src.store:list()) do
+      if not seen[entry.term] then
+        seen[entry.term] = true
+        items[#items + 1] = { entry = entry, store = src.store, label = src.label, scope = src.scope }
+      end
+    end
+  end
+  return items
+end
+
 --- :Gloss list: everything defined in the current context (project store
 --- plus the global dictionary), optionally tag-filtered.
 ---@param query string?
 function M.list(query)
-  local items = {}
-  for _, src in ipairs(M.local_sources()) do
-    for _, entry in ipairs(src.store:list()) do
-      items[#items + 1] = { entry = entry, store = src.store, label = src.label, scope = src.scope }
-    end
-  end
+  local items = M.context_items()
   if #items == 0 then
     vim.notify("gloss: no glossary here yet (:Gloss add, or :Gloss init)", vim.log.levels.INFO)
     return

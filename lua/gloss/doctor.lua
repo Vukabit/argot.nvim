@@ -39,6 +39,10 @@ function M.report(opts)
     by_term[key] = by_term[key] or {}
     table.insert(by_term[key], item)
   end
+  -- the same term in several stores is informational, never a problem:
+  -- a project definition shadowing the global one is intentional layering,
+  -- and unrelated projects legitimately share vocabulary
+  local overlap = {}
   local keys = vim.tbl_keys(by_term)
   table.sort(keys)
   for _, key in ipairs(keys) do
@@ -50,11 +54,8 @@ function M.report(opts)
         labels[#labels + 1] = "[" .. item.label .. "]"
       end
     end
-    -- within-store duplicates are already reported above; this is only for
-    -- the same term living in several stores
     if #labels > 1 then
-      problems = problems + 1
-      lines[#lines + 1] = ("%q is defined in %s (:Gloss search %s to reconcile)"):format(
+      overlap[#overlap + 1] = ("%q is defined in %s (project shadows global on lookup; :Gloss search %s)"):format(
         group[1].entry.term,
         table.concat(labels, " "),
         group[1].entry.term
@@ -97,6 +98,11 @@ function M.report(opts)
 
   if problems == 0 then
     lines[#lines + 1] = "nothing wrong found"
+  end
+  if #overlap > 0 then
+    lines[#lines + 1] = ""
+    lines[#lines + 1] = "overlap (informational, not a problem):"
+    vim.list_extend(lines, overlap)
   end
   lines[#lines + 1] = ""
   lines[#lines + 1] = ("%d finding(s) across %d store(s)"):format(problems, #sources)

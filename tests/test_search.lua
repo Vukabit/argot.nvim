@@ -136,6 +136,18 @@ T["local_sources covers the lookup context: project and global, never other proj
   end, search.local_sources({ startpath = a }))
   table.sort(scopes)
   eq(scopes, { "global", "project" })
+
+  -- shadowing: the project's copy of a term wins over global's, and
+  -- global-only terms still appear
+  project.global_store():upsert({ term = "LOCAL", definition = "the global copy" })
+  local by_term = {}
+  for _, item in ipairs(search.context_items({ startpath = a })) do
+    by_term[item.entry.term] = item
+  end
+  eq(by_term.LOCAL.scope, "project")
+  eq(by_term.LOCAL.entry.definition, "d")
+  eq(by_term.EVERYWHERE.scope, "global")
+  eq(by_term.FOREIGN, nil)
   -- a global tag completes for :Gloss list (needs the cwd, so build the
   -- items the same way list does, from local_sources)
   local tags = {}
