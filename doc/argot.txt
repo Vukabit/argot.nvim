@@ -16,14 +16,15 @@ CONTENTS                                                        *argot*
   8. AI providers ............................. |argot-ai|
   9. FAQ and troubleshooting .................. |argot-faq|
 
-argot.nvim 0.1.1
+argot.nvim 0.1.0
 
 ==============================================================================
 1. INTRODUCTION                                 *argot-introduction*
 
 Argot (AR-goh; the t is silent) is the insider vocabulary of a group.
 Every codebase has one, and this plugin decodes it: argot.nvim keeps a
-dictionary of the terms, acronyms, and jargon a project actually uses. Look up the word under the cursor and its definition appears
+dictionary of the terms, acronyms, and jargon a project actually uses.
+Look up the word under the cursor and its definition appears
 in a floating window holding a real, editable buffer; if no definition
 exists, you can write one on the spot, store it in the project's glossary or
 your global dictionary, or let a pluggable AI provider propose one from

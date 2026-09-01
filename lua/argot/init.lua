@@ -3,7 +3,7 @@
 
 local M = {}
 
-M.version = "0.1.1"
+M.version = "0.1.0"
 
 --- Optional. argot works with defaults if this is never called.
 ---@param opts table? see :h argot.setup

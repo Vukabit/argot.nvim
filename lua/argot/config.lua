@@ -69,20 +69,7 @@ end
 
 ---@return string
 function M.data_dir()
-  if M.options.data_dir then
-    return M.options.data_dir
-  end
-  local dir = vim.fs.joinpath(vim.fn.stdpath("data") --[[@as string]], "argot")
-  if not vim.uv.fs_stat(dir) then
-    -- one-time migration from the pre-rename location (the plugin
-    -- launched as gloss.nvim); registry contents are path-keyed, so a
-    -- directory rename carries everything
-    local legacy = vim.fs.joinpath(vim.fn.stdpath("data") --[[@as string]], "gloss")
-    if vim.uv.fs_stat(legacy) then
-      vim.uv.fs_rename(legacy, dir)
-    end
-  end
-  return dir
+  return M.options.data_dir or vim.fs.joinpath(vim.fn.stdpath("data") --[[@as string]], "argot")
 end
 
 return M

@@ -80,16 +80,6 @@ T["delete removes by term or alias and reports"] = function()
   eq(s:list(), {})
 end
 
-T["pre-rename gloss headers load fine and upgrade on write"] = function()
-  vim.fn.writefile({ '{"gloss":1}', '{"term":"API","definition":"d"}' }, path())
-  local s = jsonl.open(path())
-  eq(s.version, 1)
-  eq(#s.bad_lines, 0)
-  eq(s:get("API").definition, "d")
-  s:upsert({ term = "DLQ", definition = "d" })
-  eq(vim.fn.readfile(path())[1], '{"argot":1}')
-end
-
 T["damaged lines are tolerated on load and preserved on write"] = function()
   vim.fn.writefile({
     '{"argot":1}',

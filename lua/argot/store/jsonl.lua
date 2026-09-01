@@ -81,11 +81,8 @@ function Store:_load()
     if line ~= "" then
       local ok, obj = pcall(vim.json.decode, line)
       local valid = ok and type(obj) == "table"
-      if valid and (obj.argot ~= nil or obj.gloss ~= nil) then
-        -- obj.gloss is the pre-rename header (the plugin launched as
-        -- gloss.nvim); files carrying it load fine and get the argot
-        -- header on their next write
-        self.version = obj.argot or obj.gloss
+      if valid and obj.argot ~= nil then
+        self.version = obj.argot
       elseif valid and type(obj.term) == "string" then
         obj = store.sanitize(obj)
         if store.match(self.entries, obj.term, { terms_only = true }) then

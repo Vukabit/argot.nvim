@@ -12,10 +12,7 @@ one when it is missing, optionally let a pluggable AI provider propose one from
 codebase context. Named after *argot* (French; the t is silent): the
 insider vocabulary of a group, originally the semi-private cant of the
 Parisian underworld, later any in-group's working language. Every codebase
-grows one; this plugin decodes it. (The project launched as gloss.nvim,
-after the medieval marginal note; it was renamed at 0.1.1 because four
-unrelated repos already carried that name, while argot was untouched in
-the editor ecosystem and names the problem rather than the mechanism.)
+grows one; this plugin decodes it.
 
 ## Storage: two adapters behind one interface
 
