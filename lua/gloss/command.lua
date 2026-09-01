@@ -1,6 +1,6 @@
---- :Gloss subcommand dispatch and completion. Subcommands are registered
---- here as milestones land; unimplemented ones respond honestly instead of
---- failing silently.
+--- :Gloss subcommand dispatch and completion. A subcommand that exists in
+--- the list but has no handler responds honestly instead of failing
+--- silently.
 
 local M = {}
 

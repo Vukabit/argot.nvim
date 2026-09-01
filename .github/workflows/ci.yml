@@ -5,10 +5,22 @@ on:
     branches: [main]
   pull_request:
 
+# every step runs under bash, so a job landing on a Windows runner never
+# feeds bash syntax to PowerShell
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  lint:
-    # formatting is OS-independent; run once on the org Linux runners
-    runs-on: [self-hosted, Linux, X64]
+  checks:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: Linux, arch: X64, neovim: stable }
+          - { os: Linux, arch: X64, neovim: nightly }
+          - { os: macOS, arch: ARM64, neovim: stable }
+    runs-on: [self-hosted, "${{ matrix.os }}", "${{ matrix.arch }}"]
     steps:
       - uses: actions/checkout@v4
       - uses: JohnnyMorganz/stylua-action@v4
@@ -20,20 +32,16 @@ jobs:
         run: sh scripts/version.sh check
       - name: Run selene
         run: |
-          curl -fsSL -o /tmp/selene.zip https://github.com/Kampfkarren/selene/releases/download/0.31.0/selene-0.31.0-linux.zip
+          case "${{ runner.os }}" in
+            Linux) asset=selene-0.31.0-linux.zip ;;
+            macOS) asset=selene-0.31.0-macos.zip ;;
+          esac
+          curl -fsSL -o /tmp/selene.zip "https://github.com/Kampfkarren/selene/releases/download/0.31.0/$asset"
           unzip -o /tmp/selene.zip -d /tmp/selene-bin
           chmod +x /tmp/selene-bin/selene
           /tmp/selene-bin/selene lua plugin tests scripts
-
-  test:
-    strategy:
-      fail-fast: false
-      matrix:
-        neovim: [stable, nightly]
-    runs-on: [self-hosted, Linux, X64]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install libsqlite3 (best effort; sqlite suites skip without it)
+      - name: Install libsqlite3 (Linux; sqlite suites skip without it)
+        if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev || echo "libsqlite3 unavailable"
       - uses: rhysd/action-setup-vim@v1
         with:

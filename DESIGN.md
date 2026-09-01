@@ -106,21 +106,17 @@ quickstart only. CI includes a doc-drift check (every subcommand, `<Plug>`
 map, and setup key must have a help tag, and vice versa) so the manual cannot
 silently rot.
 
-## Build order
+## Layering
 
-1. Scaffold, tooling, storage adapters with tests (done)
-2. Registry, init/deinit, lookup pipeline, definition buffer, keymap layers
-   (done; the plugin is daily-drivable from here)
-3. Cross-DB fuzzy search with copy/move actions, list, projects, relink
-   (done)
-4. AI handler, CLI reference adapter, consent gate (done)
-5. doctor/gc/export/import/help, hover.nvim provider, doc-drift test, FAQ,
-   v0.1.0 (done)
+The build order was bottom-up on purpose: storage adapters first, then
+project identity, then the lookup pipeline and definition buffer, then
+search, with AI, maintenance commands, and the integrations (statusline,
+highlighting, telescope, hover, cross-links) arriving last as skins over
+those layers. The payoff of that ordering is visible in the late features:
+none of them required a design change, only composition of the search
+engine, the event bus, and the case policy.
 
-## Post-0.1
+## Still open
 
-Milestone 6 (v0.2.0) shipped the statusline component, the telescope
-extension, and extmark highlighting; all landed as skins over existing
-layers (search engine, events, case policy) with no design changes, which
-was the point of designing those layers first. Still open: cross-linked
-definitions, FTS if search ever feels slow.
+FTS for definition bodies, if search over large glossaries ever feels
+slow. Nothing else on the design books.
