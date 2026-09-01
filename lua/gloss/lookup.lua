@@ -26,6 +26,9 @@ local function ci_allowed(entry, case_cfg)
   return true
 end
 
+-- exposed for the highlighter, which must honor the same policy
+M.ci_allowed = ci_allowed
+
 ---@param entries GlossEntry[]
 ---@param word string
 ---@param case_cfg? table

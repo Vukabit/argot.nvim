@@ -47,7 +47,7 @@ T["every <Plug> mapping is documented"] = function()
 end
 
 T["every setup key has a config tag"] = function()
-  package.loaded["gloss.config"] = nil
+  require("gloss.config").setup({})
   local options = require("gloss.config").options
   local doc = doc_text()
   local missing = {}

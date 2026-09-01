@@ -221,19 +221,26 @@ function M.actions(item)
     elseif choice == "move to..." then
       M._pick_destination(item, true)
     elseif choice == "delete" then
-      if
-        vim.fn.confirm(("Delete %q from [%s]?"):format(item.entry.term, item.label), "&Yes\n&No", 2) == 1
-      then
-        item.store:delete(item.entry.term)
-        events.emit("GlossEntryRemoved", { term = item.entry.term, scope = item.label })
-        vim.notify(("gloss: deleted %q from [%s]"):format(item.entry.term, item.label))
-      end
+      M.delete_item(item)
     elseif choice == "reveal origin" then
       vim.notify(
         ("gloss: %q lives in [%s] at %s"):format(item.entry.term, item.label, item.store.path or "?")
       )
     end
   end)
+end
+
+--- Confirm-and-delete one item; shared by the actions menu and telescope.
+---@param item GlossSearchItem
+---@return boolean deleted
+function M.delete_item(item)
+  if vim.fn.confirm(("Delete %q from [%s]?"):format(item.entry.term, item.label), "&Yes\n&No", 2) ~= 1 then
+    return false
+  end
+  item.store:delete(item.entry.term)
+  events.emit("GlossEntryRemoved", { term = item.entry.term, scope = item.label })
+  vim.notify(("gloss: deleted %q from [%s]"):format(item.entry.term, item.label))
+  return true
 end
 
 function M._pick_destination(item, is_move)

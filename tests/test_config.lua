@@ -1,9 +1,11 @@
 local eq = MiniTest.expect.equality
 
+-- reset via setup({}) rather than reloading the module: a reload would fork
+-- a second config instance and desync every module that captured the first
 local T = MiniTest.new_set({
   hooks = {
     pre_case = function()
-      package.loaded["gloss.config"] = nil
+      require("gloss.config").setup({})
     end,
   },
 })

@@ -32,6 +32,13 @@ local defaults = {
       usages = 20, -- capped project-wide ripgrep hits
     },
   },
+  highlight = {
+    -- opt-in: mark known terms in normal buffers with extmarks
+    enabled = false,
+    hl_group = "GlossTerm",
+    -- buffers longer than this are skipped
+    max_lines = 2000,
+  },
   -- override where global.db, the registry, and project DBs live
   -- (default: stdpath("data")/gloss)
   data_dir = nil,
@@ -49,6 +56,7 @@ function M.setup(opts)
   vim.validate("keymaps", opts.keymaps, { "boolean", "table" }, true)
   vim.validate("case", opts.case, "table", true)
   vim.validate("ai", opts.ai, "table", true)
+  vim.validate("highlight", opts.highlight, "table", true)
   vim.validate("data_dir", opts.data_dir, "string", true)
   M.options = vim.tbl_deep_extend("force", vim.deepcopy(defaults), opts)
   for _, key in ipairs(LIST_OPTIONS) do

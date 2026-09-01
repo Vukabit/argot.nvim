@@ -13,6 +13,15 @@ function M.setup(opts)
   -- legacy hover.nvim versions only; modern ones load the provider module
   -- "gloss.providers.hover" via hover's own config (see :h gloss-keymaps)
   require("gloss.hover").register()
+  if require("gloss.config").options.highlight.enabled then
+    require("gloss.highlights").set(true)
+  end
+end
+
+--- Statusline component: "gloss:<count>" for the current project, or "".
+---@return string
+function M.statusline()
+  return require("gloss.statusline").component()
 end
 
 --- Look up a word (default: the word under the cursor or visual selection).

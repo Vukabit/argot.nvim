@@ -19,6 +19,7 @@ local SUBCOMMANDS = {
   "export",
   "import",
   "ai",
+  "highlight",
   "doctor",
   "help",
 }
@@ -148,6 +149,22 @@ handlers.init = function(cmd)
   else
     vim.notify(("gloss: project already registered (%s)"):format(res.path))
   end
+end
+
+handlers.highlight = function(cmd)
+  local highlights = require("gloss.highlights")
+  local action = cmd.fargs[2] or "toggle"
+  if action == "on" then
+    highlights.set(true)
+  elseif action == "off" then
+    highlights.set(false)
+  elseif action == "toggle" then
+    highlights.set(not highlights.active())
+  else
+    vim.notify("gloss: usage is :Gloss highlight on|off|toggle", vim.log.levels.ERROR)
+    return
+  end
+  vim.notify("gloss: term highlighting " .. (highlights.active() and "on" or "off"))
 end
 
 handlers.doctor = function()
@@ -311,6 +328,9 @@ local ARG_CANDIDATES = {
   end,
   ai = function()
     return { "on", "off", "status" }
+  end,
+  highlight = function()
+    return { "on", "off", "toggle" }
   end,
   export = function(arglead)
     return vim.fn.getcompletion(arglead, "file")
