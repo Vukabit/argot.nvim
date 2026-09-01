@@ -43,7 +43,7 @@ function M.open(path)
       vim.fn.mkdir(dir, "p")
     end
   end
-  local self = setmetatable({ db = sqlite.new(path) }, Store)
+  local self = setmetatable({ db = sqlite.new(path), path = path }, Store)
   self.db:open()
   self.db:eval("PRAGMA journal_mode = WAL")
   self.db:eval(SCHEMA)

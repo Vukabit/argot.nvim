@@ -41,6 +41,66 @@ handlers.delete = function(cmd)
   require("gloss.lookup").delete(cmd.fargs[2])
 end
 
+handlers.search = function(cmd)
+  require("gloss.search").run(table.concat(vim.list_slice(cmd.fargs, 2), " "))
+end
+
+handlers.list = function(cmd)
+  require("gloss.search").list(table.concat(vim.list_slice(cmd.fargs, 2), " "))
+end
+
+handlers.projects = function()
+  require("gloss.search").projects()
+end
+
+handlers.relink = function()
+  local project = require("gloss.project")
+  local desc = project.resolve()
+  if desc.mode == "in_repo" then
+    vim.notify(
+      "gloss: in-repo projects need no relinking (identity is the checked-out .gloss/)",
+      vim.log.levels.INFO
+    )
+    return
+  end
+  if desc.relink then
+    local msg = ("Relink this repo to its existing glossary (previously at %s)?"):format(desc.relink.old_root)
+    if vim.fn.confirm(msg, "&Yes\n&No", 1) == 1 then
+      project.relink(desc.relink.id, desc.root)
+      require("gloss.events").emit("GlossStoreChanged", {})
+      vim.notify("gloss: relinked")
+    end
+    return
+  end
+  if desc.registry_id then
+    vim.notify("gloss: this project is already linked", vim.log.levels.INFO)
+    return
+  end
+  local reg = project.load_registry()
+  local ids = {}
+  for id in pairs(reg.projects) do
+    ids[#ids + 1] = id
+  end
+  table.sort(ids)
+  if #ids == 0 then
+    vim.notify("gloss: the registry is empty; nothing to relink to", vim.log.levels.INFO)
+    return
+  end
+  vim.ui.select(ids, {
+    prompt = "Relink this directory to which project?",
+    format_item = function(id)
+      return reg.projects[id].root
+    end,
+  }, function(id)
+    if not id then
+      return
+    end
+    project.relink(id, desc.root)
+    require("gloss.events").emit("GlossStoreChanged", {})
+    vim.notify(("gloss: relinked %s here"):format(reg.projects[id].root))
+  end)
+end
+
 handlers.init = function(cmd)
   local project = require("gloss.project")
   local events = require("gloss.events")
@@ -150,6 +210,12 @@ local ARG_CANDIDATES = {
   edit = term_candidates,
   delete = term_candidates,
   lookup = term_candidates,
+  search = function()
+    return require("gloss.search").tag_candidates("all")
+  end,
+  list = function()
+    return require("gloss.search").tag_candidates("project")
+  end,
   init = function()
     return { "-p" }
   end,
