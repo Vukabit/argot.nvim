@@ -324,7 +324,7 @@ local ARG_CANDIDATES = {
     return require("gloss.search").tag_candidates("all")
   end,
   list = function()
-    return require("gloss.search").tag_candidates("project")
+    return require("gloss.search").tag_candidates("local")
   end,
   init = function()
     return { "-p" }

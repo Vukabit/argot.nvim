@@ -294,19 +294,29 @@ function M._pick_destination(item, is_move)
   end)
 end
 
---- :Gloss list: the current project's entries, optionally tag-filtered.
+--- Stores reachable from the current context: the project and the global
+--- dictionary. Other projects are search's job, but everything the lookup
+--- chain can resolve here belongs in list.
+---@param opts? {startpath?: string}
+function M.local_sources(opts)
+  return vim.tbl_filter(function(src)
+    return src.scope ~= "other"
+  end, M.sources(opts))
+end
+
+--- :Gloss list: everything defined in the current context (project store
+--- plus the global dictionary), optionally tag-filtered.
 ---@param query string?
 function M.list(query)
-  local project = require("gloss.project")
-  local handle, desc = project.project_store({ interactive = true })
-  if not handle then
-    vim.notify("gloss: this project has no glossary yet (:Gloss add, or :Gloss init)", vim.log.levels.INFO)
-    return
-  end
-  local label = vim.fs.basename(desc.root)
   local items = {}
-  for _, entry in ipairs(handle:list()) do
-    items[#items + 1] = { entry = entry, store = handle, label = label, scope = "project" }
+  for _, src in ipairs(M.local_sources()) do
+    for _, entry in ipairs(src.store:list()) do
+      items[#items + 1] = { entry = entry, store = src.store, label = src.label, scope = src.scope }
+    end
+  end
+  if #items == 0 then
+    vim.notify("gloss: no glossary here yet (:Gloss add, or :Gloss init)", vim.log.levels.INFO)
+    return
   end
   items = M.filter(items, query)
   if #items == 0 then
@@ -316,9 +326,9 @@ function M.list(query)
     )
     return
   end
-  vim.ui.select(items, { prompt = "gloss: " .. label, format_item = M.format_item }, function(item)
+  vim.ui.select(items, { prompt = "gloss list", format_item = M.format_item }, function(item)
     if item then
-      require("gloss.defbuf").open(item.entry, { store = item.store, scope = "project" })
+      require("gloss.defbuf").open(item.entry, { store = item.store, scope = item.label })
     end
   end)
 end
@@ -357,16 +367,17 @@ function M.projects()
   end)
 end
 
---- Distinct tags across stores, for command completion.
----@param scope "all"|"project"
+--- Distinct tags for command completion: "local" covers what :Gloss list
+--- shows (project + global), "all" covers every store like search.
+---@param scope "all"|"local"
 ---@return string[]
 function M.tag_candidates(scope)
-  local items
-  if scope == "project" then
-    local handle = require("gloss.project").project_store({})
-    items = {}
-    for _, entry in ipairs(handle and handle:list() or {}) do
-      items[#items + 1] = { entry = entry }
+  local items = {}
+  if scope == "local" then
+    for _, src in ipairs(M.local_sources()) do
+      for _, entry in ipairs(src.store:list()) do
+        items[#items + 1] = { entry = entry }
+      end
     end
   else
     items = M.collect()

@@ -75,9 +75,12 @@ subcommands (terms, tags, files, and help topics all complete).
       Direct entry operations, term-completed. Delete confirms first.
 
   :Gloss list [{query}]                         *:Gloss-list*
-      Picker over the current project's entries; the optional query uses
-      the same grammar as search (`#tag` filters, fuzzy words). Selecting
-      an entry opens it for editing.
+      Picker over everything defined in the current context: the project's
+      entries and the global dictionary, labeled by origin (whatever the
+      lookup chain can resolve here belongs in list). The optional query
+      uses the same grammar as search (`#tag` filters, fuzzy words).
+      Selecting an entry opens it for editing. Other projects' glossaries
+      are |:Gloss-search| and |:Gloss-projects| territory.
 
   :Gloss search [{query}]                       *:Gloss-search*
       Fuzzy search across every store: the current project, the global

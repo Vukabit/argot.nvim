@@ -119,6 +119,34 @@ T["move copies then deletes from the source"] = function()
   eq(src:get("API").definition, "again")
 end
 
+T["local_sources covers the lookup context: project and global, never other projects"] = function()
+  if not has_sqlite then
+    MiniTest.skip("sqlite.lua not available")
+  end
+  local a = vim.fs.joinpath(tmpdir, "here")
+  local b = vim.fs.joinpath(tmpdir, "elsewhere")
+  vim.fn.mkdir(a, "p")
+  vim.fn.mkdir(b, "p")
+  project.store_for(project.register(a)):upsert({ term = "LOCAL", definition = "d" })
+  project.store_for(project.register(b)):upsert({ term = "FOREIGN", definition = "d" })
+  project.global_store():upsert({ term = "EVERYWHERE", tags = { "web" }, definition = "d" })
+
+  local scopes = vim.tbl_map(function(src)
+    return src.scope
+  end, search.local_sources({ startpath = a }))
+  table.sort(scopes)
+  eq(scopes, { "global", "project" })
+  -- a global tag completes for :Gloss list (needs the cwd, so build the
+  -- items the same way list does, from local_sources)
+  local tags = {}
+  for _, src in ipairs(search.local_sources({ startpath = a })) do
+    for _, entry in ipairs(src.store:list()) do
+      vim.list_extend(tags, entry.tags or {})
+    end
+  end
+  eq(vim.tbl_contains(tags, "web"), true)
+end
+
 T["sources enumerates current project, global, and other projects"] = function()
   if not has_sqlite then
     MiniTest.skip("sqlite.lua not available")
