@@ -143,6 +143,12 @@ subcommands (terms, tags, files, and help topics all complete).
       `status` reports the provider, this project's consent, and whether
       ripgrep is available for context gathering.
 
+  :Gloss highlight [on|off|toggle]              *:Gloss-highlight*
+      Toggle extmark highlighting of known terms in normal buffers for
+      this session (default: toggle). |gloss.setup.highlight| turns it on
+      permanently. Highlighting honors the case policy: a stored "IT"
+      never lights up the word "it".
+
   :Gloss doctor                                 *:Gloss-doctor*
       A read-only report of things silently wrong: damaged glossary lines
       (kept verbatim on writes), duplicate terms within a file (union
@@ -178,6 +184,22 @@ List it in hover's own config: >lua
 <
 (Very old hover.nvim versions with a register() API are handled
 automatically by setup().)
+
+Statusline: a cached component showing the current project's entry count
+("gloss:12", or "" with no glossary): >lua
+
+  -- lualine
+  sections = { lualine_x = { function() return require("gloss").statusline() end } }
+<
+or vanilla: `set statusline+=%{v:lua.require'gloss'.statusline()}`
+
+Telescope: with nvim-telescope/telescope.nvim installed, >lua
+
+  require("telescope").load_extension("gloss")
+<
+enables `:Telescope gloss` over every store with live filtering. Mappings
+inside the picker: <CR> edit, CTRL-Y copy to another store, CTRL-O move,
+CTRL-D delete (confirmed).
 
 ==============================================================================
 5. THE DEFINITION BUFFER                        *gloss-buffer*
@@ -241,6 +263,14 @@ ai                `provider`: a GlossProvider table (|gloss-ai|), or nil to
                   disable the AI miss handler. `context`: how much codebase
                   context requests carry (`lines` around the cursor,
                   default 8; `usages` capped ripgrep hits, default 20).
+
+                                                *gloss.setup.highlight*
+highlight         `enabled`: mark known terms in normal buffers with
+                  extmarks (default false; |:Gloss-highlight| toggles per
+                  session). `hl_group`: highlight group, default
+                  "GlossTerm" (underline unless you define it).
+                  `max_lines`: buffers longer than this are skipped,
+                  default 2000.
 
                                                 *gloss.setup.data_dir*
 data_dir          Override where the global dictionary, registry, and

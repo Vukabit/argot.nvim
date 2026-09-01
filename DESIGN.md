@@ -117,8 +117,10 @@ silently rot.
 5. doctor/gc/export/import/help, hover.nvim provider, doc-drift test, FAQ,
    v0.1.0 (done)
 
-## Out of scope for v0.1
+## Post-0.1
 
-Statusline component, telescope extension, extmark highlighting of known
-terms, cross-linked definitions, FTS. All post-v0.1; none require design
-changes.
+Milestone 6 (v0.2.0) shipped the statusline component, the telescope
+extension, and extmark highlighting; all landed as skins over existing
+layers (search engine, events, case policy) with no design changes, which
+was the point of designing those layers first. Still open: cross-linked
+definitions, FTS if search ever feels slow.

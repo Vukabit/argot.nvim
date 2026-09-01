@@ -20,7 +20,7 @@ lazy.nvim:
 
 ```lua
 {
-  "shawnbays/gloss.nvim",
+  "Vukabit/gloss.nvim",
   dependencies = { "kkharji/sqlite.lua" },
   opts = {},
 }
@@ -57,8 +57,10 @@ definition float, per-project and global stores, in-repo mode with sane git
 merges, cross-store fuzzy search with copy/move, the projects browser,
 relink for moved repos, `:Gloss doctor`/`gc`/`export`/`import`, a
 [hover.nvim](https://github.com/lewis6991/hover.nvim) provider registered
-automatically, and `:checkhealth gloss`. Post-0.1 ideas: a statusline
-component, a telescope extension, extmark highlighting of known terms.
+automatically, and `:checkhealth gloss`. Integrations: a cached statusline
+component (`require("gloss").statusline()`), opt-in extmark highlighting of
+known terms (`:Gloss highlight`), and a telescope extension
+(`:Telescope gloss` after `load_extension("gloss")`).
 
 ## Documentation
 

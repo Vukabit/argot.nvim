@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.1.0 (2026-09-01)
+## 0.1.0 (unreleased; cut when the repo lands at Vukabit/gloss.nvim)
 
-First cut. Everything in the manual works:
+Everything in the manual works:
 
 - lookup, add, edit, delete through the editable acwrite definition float
   (header + markdown body, rename via the term line)
@@ -22,4 +22,7 @@ First cut. Everything in the manual works:
 - maintenance: `doctor`, `gc` (confirmed, backed up), `export`/`import`,
   `:Gloss help`, `:checkhealth gloss`
 - keymaps: <Plug> contract, opt-in curated set with per-key overrides and
-  no-clobber install, automatic hover.nvim provider registration
+  no-clobber install; hover.nvim provider module
+- integrations: cached statusline component, opt-in extmark highlighting
+  of known terms (case-policy aware), telescope extension with copy/move/
+  delete mappings
