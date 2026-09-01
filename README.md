@@ -1,8 +1,5 @@
 # gloss.nvim
 
-> **Work in progress, pre-0.1.** The storage layer is built and tested; the
-> user-facing commands are landing milestone by milestone (see DESIGN.md).
-
 A per-project glossary for the jargon and acronyms your codebase actually
 uses. Hover a term to see its definition in an editable float, add missing
 ones as you go, share the glossary with your team by committing it, and
@@ -55,11 +52,13 @@ require("gloss").setup({
 Proposals open in the review buffer marked as AI-sourced; nothing is saved
 until you `:w`.
 
-Working today: lookup, add, edit, delete, init/deinit with migration, the
-keymap layers, cross-store fuzzy search (`:Gloss search #tag words`) with
-copy/move between stores, `:Gloss list`, the projects browser, relink, AI
-providers with the consent gate, and `:checkhealth gloss`. Landing next:
-doctor/gc/export, the hover.nvim provider, and v0.1.0.
+The full tour lives in the manual (`:h gloss`): lookup and the editable
+definition float, per-project and global stores, in-repo mode with sane git
+merges, cross-store fuzzy search with copy/move, the projects browser,
+relink for moved repos, `:Gloss doctor`/`gc`/`export`/`import`, a
+[hover.nvim](https://github.com/lewis6991/hover.nvim) provider registered
+automatically, and `:checkhealth gloss`. Post-0.1 ideas: a statusline
+component, a telescope extension, extmark highlighting of known terms.
 
 ## Documentation
 

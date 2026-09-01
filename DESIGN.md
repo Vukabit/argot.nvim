@@ -114,7 +114,8 @@ silently rot.
 3. Cross-DB fuzzy search with copy/move actions, list, projects, relink
    (done)
 4. AI handler, CLI reference adapter, consent gate (done)
-5. doctor/gc/export, hover.nvim provider, full vimdoc, v0.1.0
+5. doctor/gc/export/import/help, hover.nvim provider, doc-drift test, FAQ,
+   v0.1.0 (done)
 
 ## Out of scope for v0.1
 

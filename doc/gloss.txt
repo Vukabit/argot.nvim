@@ -16,8 +16,7 @@ CONTENTS                                                        *gloss*
   8. AI providers ............................. |gloss-ai|
   9. FAQ and troubleshooting .................. |gloss-faq|
 
-NOTE: gloss.nvim is pre-0.1. Sections marked [planned] describe designed but
-not yet built behavior; see DESIGN.md in the repository for the build order.
+gloss.nvim 0.1.0
 
 ==============================================================================
 1. INTRODUCTION                                 *gloss-introduction*
@@ -26,8 +25,8 @@ gloss.nvim keeps a dictionary of the terms, acronyms, and jargon a project
 actually uses. Look up the word under the cursor and its definition appears
 in a floating window holding a real, editable buffer; if no definition
 exists, you can write one on the spot, store it in the project's glossary or
-your global dictionary, or [planned] let a pluggable AI provider propose one
-from codebase context.
+your global dictionary, or let a pluggable AI provider propose one from
+codebase context (|gloss-ai|).
 
 A glossary lives outside the repository by default. Running `:Gloss init -p`
 moves it into a `.gloss/` directory as line-based JSON that diffs, merges,
@@ -60,7 +59,7 @@ Then, in any project:
 3. COMMANDS                                     *:Gloss*
 
 All functionality is reachable through one command with completed
-subcommands. [planned] ones currently report their status.
+subcommands (terms, tags, files, and help topics all complete).
 
   :Gloss [lookup] [{term}]                      *:Gloss-lookup*
       Resolve {term} (default: the word under the cursor, or the visual
@@ -120,11 +119,22 @@ subcommands. [planned] ones currently report their status.
       it offers the registry list to link the current root to.
 
   :Gloss gc                                     *:Gloss-gc*
-      Clean up registry entries whose roots vanished (confirmed, never
-      automatic). [planned]
+      Clean up registry entries whose roots vanished. Each is confirmed
+      individually, and the entry's DB is backed up before the entry is
+      retired; nothing is ever deleted automatically.
 
-  :Gloss export [{path}]  :Gloss import [{path}]  *:Gloss-export*
-      JSONL out of / into the current store. [planned]
+  :Gloss export [{path}]                        *:Gloss-export*
+      Snapshot the project glossary as JSONL (default: ./glossary.jsonl).
+      Confirms before overwriting an existing file.
+
+  :Gloss import {path}                          *:Gloss-import*
+      Fold a JSONL file into the project glossary, registering the
+      project if needed. Timestamps are preserved; same-term entries are
+      overwritten; damaged source lines are skipped and reported.
+
+  :Gloss help [{topic}]                         *:Gloss-help*
+      Open this manual, jumping to {topic} if given (completes over gloss
+      help tags).
 
   :Gloss ai on|off|status                       *:Gloss-ai*
       Per-project consent gate for sending code context to the configured
@@ -134,8 +144,11 @@ subcommands. [planned] ones currently report their status.
       ripgrep is available for context gathering.
 
   :Gloss doctor                                 *:Gloss-doctor*
-      Report damaged glossary lines, duplicate terms across stores, and
-      stale registry paths. [planned]
+      A read-only report of things silently wrong: damaged glossary lines
+      (kept verbatim on writes), duplicate terms within a file (union
+      merges), the same term defined in several stores, stale registry
+      roots, and pending relinks. Every finding names the command that
+      fixes it.
 
 ==============================================================================
 4. KEYMAPS                                      *gloss-keymaps*
@@ -154,6 +167,17 @@ clobbers an existing mapping (skipped maps are reported once and by
 The curated set (|gloss.setup.keymaps|), default prefix `<leader>g`:
 suffix `g` lookup, `a` add, `s` search, `l` list, `p` projects. Each action
 takes its own lhs or `false` in the keymaps table.
+
+K-style hover: gloss ships a lewis6991/hover.nvim provider module, so
+hovering a known term shows its definition with no gloss keymap at all.
+List it in hover's own config: >lua
+
+  require("hover").config({
+    providers = { "hover.providers.lsp", "gloss.providers.hover" },
+  })
+<
+(Very old hover.nvim versions with a register() API are handled
+automatically by setup().)
 
 ==============================================================================
 5. THE DEFINITION BUFFER                        *gloss-buffer*
@@ -280,6 +304,30 @@ project. |:Gloss-ai|
 ==============================================================================
 9. FAQ                                          *gloss-faq*
 
-[planned]
+Q: Typing "api" over an "API" entry finds nothing. ~
+   By design: short all-uppercase acronyms match case-sensitively so the
+   English word "it" can never hit an "IT" entry. Raise or lower
+   `case.short_acronym_len`, set `case_sensitive = false` on the entry, or
+   add a lowercase alias.
+
+Q: How do teammates get the glossary? ~
+   `:Gloss init -p` moves it into the repository as line-based JSON, and
+   accept the offered merge=union gitattribute. From then on `git clone`
+   is the whole setup; see |gloss-storage|.
+
+Q: I moved or re-cloned a repository and my glossary is gone. ~
+   It is not gone; the registry knows the repo by its git remote. The next
+   lookup (or `:Gloss relink`) offers to relink. `:Gloss doctor` shows any
+   pending relink.
+
+Q: Is sqlite.lua required? ~
+   Only for the global dictionary and out-of-repo project stores. In-repo
+   glossaries are plain JSONL and need nothing.
+
+Q: Does the AI feature send my code somewhere? ~
+   Never by default. The "ai" miss handler is inert until `:Gloss ai on`
+   in that project, and even then proposals are only drafts in the review
+   buffer until you `:w`. See |gloss-ai| for exactly what context a
+   request carries.
 
 vim:tw=78:ts=8:noet:ft=help:norl:
