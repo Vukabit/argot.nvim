@@ -147,6 +147,16 @@ function M.open(entry, ctx)
     end
   end, { buffer = buf, desc = "gloss: close" })
 
+  -- [[link]] support: follow, complete, and see them
+  vim.bo[buf].omnifunc = "v:lua.require'gloss.links'.omnifunc"
+  vim.api.nvim_set_hl(0, "GlossLink", { default = true, underline = true })
+  vim.fn.matchadd("GlossLink", "\\[\\[[^][]\\{-}]]")
+  for _, lhs in ipairs({ "gd", "<CR>" }) do
+    vim.keymap.set("n", lhs, function()
+      M._follow(buf, win)
+    end, { buffer = buf, desc = "gloss: follow link" })
+  end
+
   -- land the cursor somewhere useful: the empty term, or the body
   if term == "" then
     vim.api.nvim_win_set_cursor(win, { 1, 6 })
@@ -154,6 +164,34 @@ function M.open(entry, ctx)
     vim.api.nvim_win_set_cursor(win, { math.min(6, line_count), 0 })
   end
   return buf, win
+end
+
+--- Follow the [[link]] under the cursor: open its entry, or a prefilled
+--- new-entry buffer when the target is not defined yet (glossaries can be
+--- written links-first). Refuses to abandon unsaved edits.
+---@param buf integer
+---@param win integer
+---@return boolean handled true when the cursor was on a link
+function M._follow(buf, win)
+  local target = require("gloss.links").at_cursor()
+  if not target then
+    return false
+  end
+  if vim.bo[buf].modified then
+    vim.notify("gloss: save (:w) or discard (:bd!) before following a link", vim.log.levels.WARN)
+    return true
+  end
+  local entry, handle, scope = require("gloss.lookup").find(target)
+  if vim.api.nvim_win_is_valid(win) then
+    vim.api.nvim_win_close(win, false)
+  end
+  if entry then
+    M.open(entry, { store = handle, scope = scope })
+  else
+    vim.notify(("gloss: %q is not defined yet"):format(target), vim.log.levels.INFO)
+    M.open({ term = target, definition = "" }, {})
+  end
+  return true
 end
 
 --- Resolve a store for a chosen scope on first save. Split out so tests

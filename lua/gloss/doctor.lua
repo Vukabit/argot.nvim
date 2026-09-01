@@ -31,8 +31,10 @@ function M.report(opts)
     end
   end
 
+  local collected = search.collect(opts)
+
   local by_term = {}
-  for _, item in ipairs(search.collect(opts)) do
+  for _, item in ipairs(collected) do
     local key = item.entry.term:lower()
     by_term[key] = by_term[key] or {}
     table.insert(by_term[key], item)
@@ -57,6 +59,27 @@ function M.report(opts)
         table.concat(labels, " "),
         group[1].entry.term
       )
+    end
+  end
+
+  -- [[links]] pointing at terms no store defines
+  local links = require("gloss.links")
+  local lookup = require("gloss.lookup")
+  local case_cfg = require("gloss.config").options.case
+  local all_entries = vim.tbl_map(function(item)
+    return item.entry
+  end, collected)
+  for _, item in ipairs(collected) do
+    for _, target in ipairs(links.extract(item.entry.definition)) do
+      if not lookup.policy_match(all_entries, target, case_cfg) then
+        problems = problems + 1
+        lines[#lines + 1] = ("[%s] %q links to [[%s]], which is not defined anywhere (:Gloss add %s)"):format(
+          item.label,
+          item.entry.term,
+          target,
+          target
+        )
+      end
     end
   end
 
