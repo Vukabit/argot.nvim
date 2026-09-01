@@ -195,9 +195,16 @@ function M._save(buf)
     vim.notify("gloss: " .. err, vim.log.levels.ERROR)
     return
   end
-  -- history carries through edits; an edited AI proposal is marked as such
+  -- history carries through edits; an AI proposal accepted verbatim stays
+  -- "ai", a touched one becomes "ai_edited"
   parsed.created_at = ctx.orig.created_at
-  parsed.source = ctx.orig.source == "ai" and "ai_edited" or ctx.orig.source
+  if ctx.orig.source == "ai" then
+    local untouched = parsed.definition == (ctx.orig.definition or "")
+      and parsed.expansion == ctx.orig.expansion
+    parsed.source = untouched and "ai" or "ai_edited"
+  else
+    parsed.source = ctx.orig.source
+  end
 
   if ctx.store then
     M._persist(buf, ctx, parsed)

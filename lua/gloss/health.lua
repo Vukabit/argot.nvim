@@ -65,6 +65,19 @@ function M.check()
     )
   end
 
+  local provider = require("gloss.config").options.ai.provider
+  if provider then
+    local consented = ok and desc and require("gloss.ai").consent(desc.root)
+    health.ok(
+      ("AI provider configured: %s (consent here: %s)"):format(
+        provider.name or "unnamed",
+        consented and "on" or "off; run :Gloss ai on"
+      )
+    )
+  else
+    health.info("no AI provider configured (optional; see :h gloss-ai)")
+  end
+
   local skipped = require("gloss.keymaps").skipped
   if #skipped == 0 then
     health.ok("no keymap conflicts")

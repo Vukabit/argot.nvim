@@ -26,6 +26,11 @@ local defaults = {
   ai = {
     -- a GlossProvider table; nil disables the AI miss handler entirely
     provider = nil,
+    -- how much codebase context the request bundle carries
+    context = {
+      lines = 8, -- lines around the cursor
+      usages = 20, -- capped project-wide ripgrep hits
+    },
   },
   -- override where global.db, the registry, and project DBs live
   -- (default: stdpath("data")/gloss)

@@ -150,6 +150,28 @@ handlers.init = function(cmd)
   end
 end
 
+handlers.ai = function(cmd)
+  local ai = require("gloss.ai")
+  local root = (require("gloss.project").detect())
+  local action = cmd.fargs[2] or "status"
+  if action == "on" or action == "off" then
+    ai.set_consent(root, action == "on")
+    vim.notify(
+      ("gloss: AI context sharing %s for %s"):format(action == "on" and "enabled" or "disabled", root)
+    )
+  elseif action == "status" then
+    local provider = require("gloss.config").options.ai.provider
+    vim.notify(table.concat({
+      "gloss ai:",
+      "  provider: " .. (provider and (provider.name or "unnamed") or "none configured"),
+      ("  consent for %s: %s"):format(root, ai.consent(root) and "on" or "off"),
+      "  ripgrep: " .. (vim.fn.executable("rg") == 1 and "found" or "missing (less context)"),
+    }, "\n"))
+  else
+    vim.notify("gloss: usage is :Gloss ai on|off|status", vim.log.levels.ERROR)
+  end
+end
+
 handlers.deinit = function()
   local project = require("gloss.project")
   if vim.fn.confirm("Convert the in-repo glossary back to an out-of-repo store?", "&Yes\n&No", 2) ~= 1 then

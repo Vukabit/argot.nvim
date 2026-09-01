@@ -99,7 +99,11 @@ function M.run(word, opts)
     if handler == "prompt" then
       return M.add(word)
     elseif handler == "ai" then
-      vim.notify("gloss: AI providers land in milestone 4", vim.log.levels.INFO)
+      -- falls through to the next handler when no provider is configured
+      -- or this project has not consented
+      if require("gloss.ai").propose_for(word) then
+        return
+      end
     end
   end
   vim.notify(("gloss: no definition for %q"):format(word), vim.log.levels.INFO)
