@@ -3,7 +3,9 @@
 ---   open(path) -> store
 ---   store:get(term, opts?)  -- opts.ci for case-insensitive; matches aliases too
 ---   store:list()
----   store:upsert(entry)     -- insert or update by term; bumps updated_at
+---   store:upsert(entry, opts?)  -- insert or update by term; bumps
+---                                  updated_at unless opts.touch == false
+---                                  (migrations and imports preserve history)
 ---   store:delete(term)      -- true if something was removed
 ---   store:close()
 ---

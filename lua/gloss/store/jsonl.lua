@@ -15,7 +15,8 @@ Store.__index = Store
 
 -- Fixed key order so identical data always serializes to identical bytes,
 -- which keeps git diffs line-minimal.
-local FIELD_ORDER = { "term", "expansion", "aliases", "tags", "source", "definition", "created_at", "updated_at" }
+local FIELD_ORDER =
+  { "term", "expansion", "aliases", "tags", "source", "definition", "created_at", "updated_at" }
 local KNOWN = {}
 for _, key in ipairs(FIELD_ORDER) do
   KNOWN[key] = true
@@ -111,10 +112,12 @@ function Store:list()
   return vim.deepcopy(self.entries)
 end
 
-function Store:upsert(entry)
+function Store:upsert(entry, opts)
   self:_refresh()
   entry = store.normalize(entry)
-  entry.updated_at = store.now()
+  if not (opts and opts.touch == false) then
+    entry.updated_at = store.now()
+  end
   local index, existing = store.match(self.entries, entry.term)
   if existing then
     entry.created_at = existing.created_at or entry.created_at

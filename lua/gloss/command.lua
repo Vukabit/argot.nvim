@@ -23,9 +23,92 @@ local SUBCOMMANDS = {
   "help",
 }
 
--- implemented subcommands map to handler functions; everything else is
--- designed but not yet built (see DESIGN.md build order)
 local handlers = {}
+
+handlers.lookup = function(cmd)
+  require("gloss.lookup").run(cmd.fargs[2], { range = cmd.range and cmd.range > 0 or nil })
+end
+
+handlers.add = function(cmd)
+  require("gloss.lookup").add(cmd.fargs[2])
+end
+
+handlers.edit = function(cmd)
+  require("gloss.lookup").edit(cmd.fargs[2])
+end
+
+handlers.delete = function(cmd)
+  require("gloss.lookup").delete(cmd.fargs[2])
+end
+
+handlers.init = function(cmd)
+  local project = require("gloss.project")
+  local events = require("gloss.events")
+  local desc = project.resolve()
+  if desc.relink then
+    local msg = ("gloss: found an existing glossary for this repo (previously at %s). Relink it?"):format(
+      desc.relink.old_root
+    )
+    if vim.fn.confirm(msg, "&Yes\n&No", 1) == 1 then
+      project.relink(desc.relink.id, desc.root)
+      desc = project.resolve()
+    end
+  end
+  if vim.tbl_contains(cmd.fargs, "-p") then
+    local ga = vim.fn.confirm(
+      "Add the recommended merge=union gitattribute for the glossary?",
+      "&Yes\n&No",
+      1
+    ) == 1
+    local ok, res = pcall(project.init_in_repo, nil, { gitattributes = ga })
+    if not ok then
+      vim.notify("gloss: " .. tostring(res), vim.log.levels.ERROR)
+      return
+    end
+    if res.created then
+      vim.notify(("gloss: created %s (%d entries migrated in)"):format(res.path, res.migrated))
+      events.emit("GlossStoreChanged", {})
+    else
+      vim.notify("gloss: project is already in in-repo mode")
+    end
+    return
+  end
+  if desc.mode == "in_repo" then
+    vim.notify("gloss: project is already in in-repo mode (" .. desc.path .. ")")
+    return
+  end
+  local ok, res, created = pcall(project.register)
+  if not ok then
+    vim.notify("gloss: " .. tostring(res), vim.log.levels.ERROR)
+    return
+  end
+  if created then
+    vim.notify(("gloss: project registered, store at %s"):format(res.path))
+    events.emit("GlossStoreChanged", {})
+  else
+    vim.notify(("gloss: project already registered (%s)"):format(res.path))
+  end
+end
+
+handlers.deinit = function()
+  local project = require("gloss.project")
+  if vim.fn.confirm("Convert the in-repo glossary back to an out-of-repo store?", "&Yes\n&No", 2) ~= 1 then
+    return
+  end
+  local ok, res = pcall(project.deinit)
+  if not ok then
+    vim.notify("gloss: " .. tostring(res), vim.log.levels.ERROR)
+    return
+  end
+  require("gloss.events").emit("GlossStoreChanged", {})
+  vim.notify(
+    ("gloss: imported %d entries to %s; remove the in-repo data yourself with: %s"):format(
+      res.imported,
+      res.path,
+      res.remove_hint
+    )
+  )
+end
 
 ---@param cmd table the nvim_create_user_command callback argument
 function M.dispatch(cmd)
@@ -37,7 +120,7 @@ function M.dispatch(cmd)
   local handler = handlers[sub]
   if not handler then
     vim.notify(
-      (":Gloss %s is designed but not built yet; the storage layer landed first (see DESIGN.md)"):format(sub),
+      (":Gloss %s is designed but not built yet (see DESIGN.md for the build order)"):format(sub),
       vim.log.levels.WARN
     )
     return
@@ -45,19 +128,53 @@ function M.dispatch(cmd)
   handler(cmd)
 end
 
+local function term_candidates()
+  local project = require("gloss.project")
+  local terms, seen = {}, {}
+  for _, scope in ipairs({ "project", "global" }) do
+    local ok, handle = pcall(project.scope_store, scope)
+    if ok and handle then
+      for _, entry in ipairs(handle:list()) do
+        if not seen[entry.term] then
+          seen[entry.term] = true
+          terms[#terms + 1] = entry.term
+        end
+      end
+    end
+  end
+  table.sort(terms)
+  return terms
+end
+
+local ARG_CANDIDATES = {
+  edit = term_candidates,
+  delete = term_candidates,
+  lookup = term_candidates,
+  init = function()
+    return { "-p" }
+  end,
+  ai = function()
+    return { "on", "off", "status" }
+  end,
+}
+
 ---@param arglead string
 ---@param cmdline string
 ---@return string[]
 function M.complete(arglead, cmdline)
-  -- only the subcommand position completes for now; per-subcommand argument
-  -- completion (terms, project names, flags) arrives with the subcommands
-  local after = cmdline:match("Gloss%s+(.*)$") or ""
-  if after:find("%s") then
-    return {}
+  local after = cmdline:match("Gloss!?%s+(.*)$") or ""
+  local before_lead = after:sub(1, #after - #arglead)
+  local candidates
+  if not before_lead:find("%S") then
+    candidates = SUBCOMMANDS
+  else
+    local sub = before_lead:match("^%s*(%S+)")
+    local fn = ARG_CANDIDATES[sub]
+    candidates = fn and fn() or {}
   end
-  return vim.tbl_filter(function(sub)
-    return vim.startswith(sub, arglead)
-  end, SUBCOMMANDS)
+  return vim.tbl_filter(function(item)
+    return vim.startswith(item, arglead)
+  end, candidates)
 end
 
 return M

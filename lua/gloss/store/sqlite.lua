@@ -85,9 +85,11 @@ function Store:get(term, opts)
   return entry
 end
 
-function Store:upsert(entry)
+function Store:upsert(entry, opts)
   entry = store.normalize(entry)
-  entry.updated_at = store.now()
+  if not (opts and opts.touch == false) then
+    entry.updated_at = store.now()
+  end
   -- created_at is deliberately absent from the UPDATE set, so the original
   -- insertion time survives edits
   self.db:eval(

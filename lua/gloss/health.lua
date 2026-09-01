@@ -43,6 +43,42 @@ function M.check()
   else
     health.error("data directory is not writable: " .. data_dir)
   end
+
+  health.start("current project")
+  local project = require("gloss.project")
+  local ok, desc = pcall(project.resolve)
+  if not ok then
+    health.warn("could not resolve the project: " .. tostring(desc))
+  elseif desc.mode == "in_repo" then
+    health.ok(("in-repo mode: %s"):format(desc.path))
+  elseif desc.mode == "out_of_repo" and desc.registry_id then
+    health.ok(("registered out-of-repo project, store at %s"):format(desc.path))
+  elseif desc.relink then
+    health.warn(
+      ("registry knows this repo under another path (%s); run :Gloss init or a lookup to relink"):format(
+        desc.relink.old_root
+      )
+    )
+  else
+    health.info(
+      "project not registered yet (saving an entry to the project scope registers it, or run :Gloss init)"
+    )
+  end
+
+  local skipped = require("gloss.keymaps").skipped
+  if #skipped == 0 then
+    health.ok("no keymap conflicts")
+  else
+    for _, skip in ipairs(skipped) do
+      health.warn(
+        ("keymap %s (%s mode, action %s) not installed: already mapped"):format(
+          skip.lhs,
+          skip.mode,
+          skip.action
+        )
+      )
+    end
+  end
 end
 
 return M

@@ -7,6 +7,25 @@ local M = {}
 ---@param opts table? see :h gloss.setup
 function M.setup(opts)
   require("gloss.config").setup(opts)
+  require("gloss.keymaps").install()
+end
+
+--- Look up a word (default: the word under the cursor or visual selection).
+---@param word string?
+function M.lookup(word)
+  require("gloss.lookup").run(word)
+end
+
+--- Open a new-entry buffer, optionally prefilled.
+---@param term string?
+function M.add(term)
+  require("gloss.lookup").add(term)
+end
+
+--- Open an existing entry for editing.
+---@param term string
+function M.edit(term)
+  require("gloss.lookup").edit(term)
 end
 
 return M
