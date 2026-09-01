@@ -16,12 +16,26 @@ local M = {}
 
 -- open store handles, keyed by "backend:path"
 local handles = {}
+-- resolve() results, keyed by start path; resolving spawns git, so callers
+-- like the statusline and the highlighter must not pay that per invocation
+local resolve_cache = {}
+local exit_hooked = false
 
+--- Invalidate the handle cache WITHOUT closing: definition buffers and
+--- pending callbacks may still hold these handles, and writing through a
+--- stale handle beats erroring out of a BufWriteCmd. Actual closing happens
+--- once, at VimLeavePre.
 function M.drop_handles()
+  handles = {}
+  resolve_cache = {}
+end
+
+function M.close_handles()
   for _, handle in pairs(handles) do
     pcall(handle.close, handle)
   end
   handles = {}
+  resolve_cache = {}
 end
 
 function M.data_paths()
@@ -41,7 +55,7 @@ local function git_out(root, ...)
     return nil
   end
   local res = proc:wait()
-  if res.code ~= 0 then
+  if not res or res.code ~= 0 then
     return nil
   end
   return vim.trim(res.stdout or "")
@@ -111,7 +125,12 @@ function M.detect(startpath)
 end
 
 function M.load_registry()
-  local reg = util.read_json(M.data_paths().registry)
+  local reg, invalid = util.read_json(M.data_paths().registry)
+  if invalid then
+    -- refuse to treat a corrupt registry as empty: the next save would
+    -- silently wipe every project mapping
+    error(("gloss: %s is unreadable; fix or remove it before continuing"):format(M.data_paths().registry))
+  end
   if type(reg) ~= "table" or type(reg.projects) ~= "table" then
     reg = { version = 1, projects = {} }
   end
@@ -120,6 +139,7 @@ end
 
 function M.save_registry(reg)
   util.write_json(M.data_paths().registry, reg)
+  resolve_cache = {}
 end
 
 local function sorted_ids(reg)
@@ -154,6 +174,16 @@ end
 ---@param startpath string?
 ---@return table desc { mode, root, backend?, path?, registry_id?, relink?, remote? }
 function M.resolve(startpath)
+  local key = startpath or vim.uv.cwd() or ""
+  if resolve_cache[key] then
+    return vim.deepcopy(resolve_cache[key])
+  end
+  local desc = M._resolve_uncached(startpath)
+  resolve_cache[key] = vim.deepcopy(desc)
+  return desc
+end
+
+function M._resolve_uncached(startpath)
   local root, mode = M.detect(startpath)
   if mode == "in_repo" then
     return {
@@ -225,6 +255,15 @@ end
 function M.store_for(desc)
   if not desc or not desc.path or not desc.backend then
     return nil
+  end
+  if not exit_hooked then
+    exit_hooked = true
+    vim.api.nvim_create_autocmd("VimLeavePre", {
+      group = vim.api.nvim_create_augroup("GlossProjectStores", {}),
+      callback = function()
+        M.close_handles()
+      end,
+    })
   end
   local key = desc.backend .. ":" .. desc.path
   if not handles[key] then
@@ -312,13 +351,23 @@ function M.init_in_repo(startpath, opts)
   end
 
   if old_store and old_desc.registry_id then
-    old_store:close()
     vim.fn.mkdir(M.data_paths().backups, "p")
     local backup = vim.fs.joinpath(
       M.data_paths().backups,
       ("%s-%s.db"):format(old_desc.registry_id, os.date("!%Y%m%d%H%M%S"))
     )
-    vim.uv.fs_copyfile(old_desc.path, backup)
+    -- never delete the only copy: a failed backup aborts the retirement
+    -- (the in-repo file already has the entries, nothing is lost)
+    local copied, copy_err = vim.uv.fs_copyfile(old_desc.path, backup)
+    if not copied then
+      M.drop_handles()
+      error(
+        ("gloss: backing up the old store failed (%s); it was NOT deleted"):format(
+          copy_err or "unknown error"
+        )
+      )
+    end
+    old_store:close()
     for _, suffix in ipairs({ "", "-wal", "-shm" }) do
       vim.uv.fs_unlink(old_desc.path .. suffix)
     end
@@ -365,16 +414,24 @@ function M.gc(ids)
   for _, id in ipairs(ids) do
     if reg.projects[id] then
       local db = vim.fs.joinpath(M.data_paths().projects, id .. ".db")
+      local safe = true
       if vim.uv.fs_stat(db) then
         local backup =
           vim.fs.joinpath(M.data_paths().backups, ("%s-gc-%s.db"):format(id, os.date("!%Y%m%d%H%M%S")))
-        vim.uv.fs_copyfile(db, backup)
-        for _, suffix in ipairs({ "", "-wal", "-shm" }) do
-          vim.uv.fs_unlink(db .. suffix)
+        -- the prompt promises a backup; a failed copy keeps the entry
+        safe = vim.uv.fs_copyfile(db, backup) ~= nil
+        if safe then
+          for _, suffix in ipairs({ "", "-wal", "-shm" }) do
+            vim.uv.fs_unlink(db .. suffix)
+          end
+        else
+          vim.notify(("gloss: backup of %s failed; entry kept"):format(id), vim.log.levels.ERROR)
         end
       end
-      reg.projects[id] = nil
-      removed = removed + 1
+      if safe then
+        reg.projects[id] = nil
+        removed = removed + 1
+      end
     end
   end
   if removed > 0 then
@@ -454,8 +511,10 @@ function M.deinit(startpath)
 
   local reg = M.load_registry()
   local remote_url = M.remote(root)
-  local id = (M.find_entry(reg, root, remote_url))
-  if not id then
+  -- only a path match may reuse an entry: a remote match is a DIFFERENT
+  -- clone of the same repo, and importing into its DB would cross-wire them
+  local id, _, how = M.find_entry(reg, root, remote_url)
+  if not (id and how == "path") then
     id = util.uuid()
     reg.projects[id] = { root = root, remote = remote_url, created_at = store.now() }
     M.save_registry(reg)

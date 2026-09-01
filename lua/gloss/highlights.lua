@@ -96,8 +96,12 @@ function M.refresh(buf)
 end
 
 local function debounced_refresh(buf)
+  -- is_closing guards both sides of the schedule_wrap gap: a TextChanged
+  -- processed between the timer firing and its scheduled body running must
+  -- not double-close the handle
   local old = timers[buf]
-  if old then
+  timers[buf] = nil
+  if old and not old:is_closing() then
     old:stop()
     old:close()
   end
@@ -110,8 +114,10 @@ local function debounced_refresh(buf)
       if timers[buf] == timer then
         timers[buf] = nil
       end
-      timer:stop()
-      timer:close()
+      if not timer:is_closing() then
+        timer:stop()
+        timer:close()
+      end
       M.refresh(buf)
     end)
   )

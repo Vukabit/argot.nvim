@@ -192,7 +192,9 @@ handlers.gc = function()
 end
 
 handlers.export = function(cmd)
-  local path = vim.fs.normalize(cmd.fargs[2] or "glossary.jsonl")
+  -- join the tail so paths with spaces survive fargs splitting
+  local arg = table.concat(vim.list_slice(cmd.fargs, 2), " ")
+  local path = vim.fs.normalize(arg ~= "" and arg or "glossary.jsonl")
   if vim.uv.fs_stat(path) and vim.fn.confirm(("Overwrite %s?"):format(path), "&Yes\n&No", 2) ~= 1 then
     return
   end
@@ -205,11 +207,12 @@ handlers.export = function(cmd)
 end
 
 handlers.import = function(cmd)
-  if not cmd.fargs[2] then
+  local arg = table.concat(vim.list_slice(cmd.fargs, 2), " ")
+  if arg == "" then
     vim.notify("gloss: :Gloss import needs a path", vim.log.levels.ERROR)
     return
   end
-  local ok, count, damaged = pcall(require("gloss.project").import_jsonl, vim.fs.normalize(cmd.fargs[2]))
+  local ok, count, damaged = pcall(require("gloss.project").import_jsonl, vim.fs.normalize(arg))
   if not ok then
     vim.notify("gloss: " .. tostring(count), vim.log.levels.ERROR)
     return

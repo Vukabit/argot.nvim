@@ -71,6 +71,7 @@ function M.build_request(word, opts)
       "--word-regexp",
       "--max-count",
       "3",
+      "--",
       word,
       root,
     }, { text = true })
@@ -104,7 +105,16 @@ function M.propose_for(word, opts)
   if not (type(provider) == "table" and type(provider.propose) == "function") then
     return false
   end
-  local root = (require("gloss.project").detect())
+  -- consent must be keyed to the project whose source the context bundle
+  -- actually carries: the current buffer's, not the cwd's
+  opts = opts and vim.deepcopy(opts) or {}
+  if not opts.startpath then
+    local bufname = vim.api.nvim_buf_get_name(opts.buf or 0)
+    if bufname ~= "" then
+      opts.startpath = vim.fs.dirname(vim.fs.normalize(bufname))
+    end
+  end
+  local root = (require("gloss.project").detect(opts.startpath))
   if not M.consent(root) then
     if not warned_consent then
       warned_consent = true

@@ -88,13 +88,23 @@ end
 function M.open(entry, ctx)
   ctx = ctx or {}
   local term = entry.term ~= nil and entry.term or ""
-  local name = ("gloss://%s/%s"):format(
-    ctx.scope or "unsaved",
-    (term ~= "" and term or "new"):gsub("[^%w%-_.]", "_")
-  )
+  -- sanitized names get a hash suffix so "C#" and "C%" never share a buffer
+  local raw = term ~= "" and term or "new"
+  local safe = raw:gsub("[^%w%-_.]", "_")
+  if safe ~= raw then
+    safe = safe .. "-" .. vim.fn.sha256(raw):sub(1, 6)
+  end
+  local name = ("gloss://%s/%s"):format(ctx.scope or "unsaved", safe)
 
   local buf = by_name[name]
-  if not (buf and vim.api.nvim_buf_is_loaded(buf) and contexts[buf]) then
+  local reuse = buf and vim.api.nvim_buf_is_loaded(buf) and contexts[buf]
+  if reuse and not vim.bo[buf].modified then
+    -- unchanged buffer: refresh from the (possibly newer) entry and context
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, M.serialize(entry))
+    vim.bo[buf].modified = false
+    contexts[buf] = { store = ctx.store, scope = ctx.scope, orig = vim.deepcopy(entry) }
+  end
+  if not reuse then
     buf = vim.api.nvim_create_buf(false, false)
     by_name[name] = buf
     pcall(vim.api.nvim_buf_set_name, buf, name)
@@ -262,10 +272,20 @@ function M._save(buf)
 end
 
 function M._persist(buf, ctx, parsed)
-  local saved = ctx.store:upsert(parsed)
+  -- the store handle may have been retired under us (:Gloss init -p, gc);
+  -- surface that instead of erroring out of BufWriteCmd and losing the edit
+  local ok, saved = pcall(ctx.store.upsert, ctx.store, parsed)
+  if not ok then
+    vim.notify(
+      "gloss: could not save (the store may have been retired; reopen the entry): " .. tostring(saved),
+      vim.log.levels.ERROR
+    )
+    return
+  end
   if ctx.orig.term and ctx.orig.term ~= "" and ctx.orig.term ~= parsed.term then
-    -- the term header was edited: this is a rename
-    ctx.store:delete(ctx.orig.term)
+    -- the term header was edited: this is a rename. terms_only, so keeping
+    -- the old spelling as an alias of the new entry never deletes the save
+    pcall(ctx.store.delete, ctx.store, ctx.orig.term, { terms_only = true })
   end
   local added = ctx.orig.created_at == nil
   ctx.orig = saved

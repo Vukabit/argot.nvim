@@ -81,11 +81,10 @@ function Store:_load()
       if valid and obj.gloss ~= nil then
         self.version = obj.gloss
       elseif valid and type(obj.term) == "string" then
-        if store.match(self.entries, obj.term) then
+        obj = store.sanitize(obj)
+        if store.match(self.entries, obj.term, { terms_only = true }) then
           self.duplicates[#self.duplicates + 1] = obj.term
         end
-        obj.aliases = obj.aliases or {}
-        obj.tags = obj.tags or {}
         self.entries[#self.entries + 1] = obj
       else
         self.bad_lines[#self.bad_lines + 1] = { lnum = lnum, line = line }
@@ -117,7 +116,9 @@ function Store:upsert(entry, opts)
   if not (opts and opts.touch == false) then
     entry.updated_at = store.now()
   end
-  local index, existing = store.match(self.entries, entry.term)
+  -- identity is the term alone: an alias must never select the row an
+  -- upsert replaces
+  local index, existing = store.match(self.entries, entry.term, { terms_only = true })
   if existing then
     entry.created_at = existing.created_at or entry.created_at
     self.entries[index] = entry
@@ -128,9 +129,9 @@ function Store:upsert(entry, opts)
   return vim.deepcopy(entry)
 end
 
-function Store:delete(term)
+function Store:delete(term, opts)
   self:_refresh()
-  local index = store.match(self.entries, term)
+  local index = store.match(self.entries, term, opts)
   if not index then
     return false
   end
@@ -162,7 +163,9 @@ function Store:_write()
   if dir and dir ~= "" then
     vim.fn.mkdir(dir, "p")
   end
-  local tmp = self.path .. ".tmp"
+  -- pid-unique tmp name: concurrent editors must never truncate each
+  -- other's in-flight write
+  local tmp = ("%s.%d.tmp"):format(self.path, vim.uv.os_getpid())
   if vim.fn.writefile(lines, tmp) ~= 0 then
     error(("gloss: failed writing %s"):format(tmp))
   end

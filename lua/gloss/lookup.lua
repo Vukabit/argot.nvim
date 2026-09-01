@@ -58,8 +58,16 @@ end
 ---@return string
 function M.word(opts)
   if opts and opts.range then
-    local lines = vim.fn.getregion(vim.fn.getpos("'<"), vim.fn.getpos("'>"), { type = vim.fn.visualmode() })
-    return vim.trim(table.concat(lines, " "):gsub("%s+", " "))
+    -- only use the visual marks when a visual selection has actually been
+    -- made this session; a bare :1,3Gloss has no region to read
+    local vmode = vim.fn.visualmode()
+    if vmode ~= "" and vim.fn.getpos("'<")[2] > 0 then
+      local ok, lines = pcall(vim.fn.getregion, vim.fn.getpos("'<"), vim.fn.getpos("'>"), { type = vmode })
+      if ok then
+        return vim.trim(table.concat(lines, " "):gsub("%s+", " "))
+      end
+    end
+    return vim.fn.expand("<cword>")
   end
   local mode = vim.fn.mode()
   if mode == "v" or mode == "V" or mode == "\22" then

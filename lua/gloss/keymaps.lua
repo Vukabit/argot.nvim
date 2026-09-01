@@ -19,7 +19,10 @@ local ACTIONS = {
 }
 
 local function existing_map(lhs, mode)
-  local typed = lhs:gsub("<[Ll]eader>", vim.g.mapleader or "\\")
+  -- the leader is a gsub REPLACEMENT string: escape % or a "%" leader
+  -- corrupts the lhs and the no-clobber check silently passes
+  local leader = (vim.g.mapleader or "\\"):gsub("%%", "%%%%")
+  local typed = lhs:gsub("<[Ll]eader>", leader)
   local map = vim.fn.maparg(typed, mode, false, true)
   if type(map) ~= "table" or vim.tbl_isempty(map) then
     return nil

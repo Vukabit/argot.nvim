@@ -20,16 +20,17 @@ function M.uuid()
 end
 
 ---@param path string
----@return table?
+---@return table? decoded
+---@return boolean invalid true when the file exists but cannot be parsed
 function M.read_json(path)
   if vim.fn.filereadable(path) ~= 1 then
-    return nil
+    return nil, false
   end
   local ok, decoded = pcall(vim.json.decode, table.concat(vim.fn.readfile(path), "\n"))
   if ok and type(decoded) == "table" then
-    return decoded
+    return decoded, false
   end
-  return nil
+  return nil, true
 end
 
 --- Atomic write: tmp file + rename, like the JSONL store.
@@ -40,7 +41,9 @@ function M.write_json(path, tbl)
   if dir and dir ~= "" then
     vim.fn.mkdir(dir, "p")
   end
-  local tmp = path .. ".tmp"
+  -- pid-unique tmp name so concurrent Neovim instances never truncate each
+  -- other's in-flight write
+  local tmp = ("%s.%d.tmp"):format(path, vim.uv.os_getpid())
   if vim.fn.writefile({ vim.json.encode(tbl) }, tmp) ~= 0 then
     error(("gloss: failed writing %s"):format(tmp))
   end

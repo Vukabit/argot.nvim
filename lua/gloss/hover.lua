@@ -41,6 +41,10 @@ function M._entry_at(opt)
     word = M.word_at(line, (opt.pos[2] or 0) + 1)
   end
   if not word or word == "" then
+    -- <cword> reads the current window; never use it for some OTHER buffer
+    if type(opt) == "table" and opt.bufnr and opt.bufnr ~= vim.api.nvim_get_current_buf() then
+      return nil
+    end
     word = vim.fn.expand("<cword>")
   end
   if not word or word == "" then

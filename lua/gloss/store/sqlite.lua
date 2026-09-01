@@ -118,8 +118,8 @@ ON CONFLICT(term) DO UPDATE SET
   return self:get(entry.term)
 end
 
-function Store:delete(term)
-  local existing = self:get(term)
+function Store:delete(term, opts)
+  local existing = self:get(term, opts)
   if not existing then
     return false
   end
