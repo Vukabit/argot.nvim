@@ -41,11 +41,25 @@ new-entry buffer. Write the definition, `:w`, pick project or global. `q`
 closes. `:Gloss init -p` moves a project's glossary into the repo as
 git-friendly JSONL so teammates get it on clone.
 
+Optional: plug in any AI to draft definitions from codebase context. The
+bundled CLI adapter turns any command into a provider, and nothing leaves
+the machine until you run `:Gloss ai on` in that project:
+
+```lua
+require("gloss").setup({
+  ai = { provider = require("gloss.providers.cli").new({ cmd = { "claude", "-p" } }) },
+  on_miss = { "ai", "prompt" },
+})
+```
+
+Proposals open in the review buffer marked as AI-sourced; nothing is saved
+until you `:w`.
+
 Working today: lookup, add, edit, delete, init/deinit with migration, the
 keymap layers, cross-store fuzzy search (`:Gloss search #tag words`) with
-copy/move between stores, `:Gloss list`, the projects browser, relink, and
-`:checkhealth gloss`. Landing next: AI providers, then doctor/gc/export and
-v0.1.0.
+copy/move between stores, `:Gloss list`, the projects browser, relink, AI
+providers with the consent gate, and `:checkhealth gloss`. Landing next:
+doctor/gc/export, the hover.nvim provider, and v0.1.0.
 
 ## Documentation
 

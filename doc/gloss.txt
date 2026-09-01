@@ -128,7 +128,10 @@ subcommands. [planned] ones currently report their status.
 
   :Gloss ai on|off|status                       *:Gloss-ai*
       Per-project consent gate for sending code context to the configured
-      AI provider. Off until explicitly enabled. [planned]
+      AI provider (|gloss-ai|). Off until explicitly enabled; consent is
+      stored per-user in the data directory, never read from the repo.
+      `status` reports the provider, this project's consent, and whether
+      ripgrep is available for context gathering.
 
   :Gloss doctor                                 *:Gloss-doctor*
       Report damaged glossary lines, duplicate terms across stores, and
@@ -211,7 +214,9 @@ case              `short_acronym_len`: uppercase terms at or under this
 
                                                 *gloss.setup.ai*
 ai                `provider`: a GlossProvider table (|gloss-ai|), or nil to
-                  disable the AI miss handler.
+                  disable the AI miss handler. `context`: how much codebase
+                  context requests carry (`lines` around the cursor,
+                  default 8; `usages` capped ripgrep hits, default 20).
 
                                                 *gloss.setup.data_dir*
 data_dir          Override where the global dictionary, registry, and
@@ -236,17 +241,41 @@ verbatim on write, and reported by `:Gloss doctor`.
 ==============================================================================
 8. AI PROVIDERS                                 *gloss-ai* *gloss-provider*
 
-[planned] A provider is a table with a `name` and one function: >lua
+With a provider configured and `:Gloss ai on` run in a project, the "ai"
+miss handler (|gloss.setup.on_miss|) asks the provider to draft a
+definition before falling back to the blank prompt. A provider is a table
+with a `name` and one function: >lua
 
   propose(request, callback)
 <
-`request` carries the term plus context gathered by gloss (surrounding
-lines, capped project-wide usages, README head). The callback receives a
-table with `definition`, `expansion`, and `confidence`, or `questions` (a
-list of clarifying questions gloss relays to the user, one round-trip).
-Proposals are never saved automatically; they open in the review buffer
-marked as AI-sourced. Providers run only after `:Gloss ai on` in that
-project.
+`request` carries the term plus context gathered by gloss: up to
+`ai.context.lines` lines around the cursor, up to `ai.context.usages`
+project-wide ripgrep hits of the term, the file path and filetype, and the
+first lines of the README. The callback takes a table with `definition`
+(markdown), and optionally `expansion`, `tags`, `confidence` (0 to 1), or
+`questions`: a list of clarifying questions gloss relays to the user via
+|vim.ui.input| before re-asking once with the answers attached (one round
+trip, then the provider must answer).
+
+Proposals are never saved automatically: they open in the review buffer
+(|gloss-buffer|) marked `source = "ai"`. Accepting verbatim keeps that
+mark; editing before `:w` records `ai_edited`.
+
+The bundled CLI adapter makes any command a provider (prompt on stdin,
+JSON on stdout), so `claude -p`, `llm`, ollama, or a homegrown script all
+work with no SDK: >lua
+
+  require("gloss").setup({
+    ai = {
+      provider = require("gloss.providers.cli").new({
+        cmd = { "claude", "-p" },
+        -- name = "claude", timeout = 60000, prompt = custom_fn(req)
+      }),
+    },
+  })
+<
+Nothing runs, and nothing leaves the machine, until `:Gloss ai on` in that
+project. |:Gloss-ai|
 
 ==============================================================================
 9. FAQ                                          *gloss-faq*

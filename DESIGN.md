@@ -113,7 +113,7 @@ silently rot.
    (done; the plugin is daily-drivable from here)
 3. Cross-DB fuzzy search with copy/move actions, list, projects, relink
    (done)
-4. AI handler, CLI reference adapter, consent gate
+4. AI handler, CLI reference adapter, consent gate (done)
 5. doctor/gc/export, hover.nvim provider, full vimdoc, v0.1.0
 
 ## Out of scope for v0.1
