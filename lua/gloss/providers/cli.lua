@@ -10,9 +10,16 @@ local M = {}
 ---@return string
 function M.default_prompt(req)
   return table.concat({
-    "You define project-specific jargon and acronyms for a code glossary.",
-    "Using the JSON request below, define the term as it is used in THIS",
-    "project (the codebase context outweighs general knowledge).",
+    "You write glossary entries for terms and acronyms found in a codebase.",
+    "Using the JSON request below, define the term concisely:",
+    "- Lead with the general meaning in one or two plain sentences.",
+    "- Only when the codebase context shows a project-specific convention,",
+    "  add ONE short sentence about how this project uses the term. Never",
+    "  enumerate code sites, constants, or file names unless the term IS",
+    "  that identifier.",
+    "- A truly project-internal term (no general meaning) is defined from",
+    "  the context alone, still briefly.",
+    "- Keep the whole definition under 80 words.",
     "Respond with ONLY a JSON object, no prose and no code fences:",
     '  {"definition": "<markdown>", "expansion": "<acronym expansion or omit>",',
     '   "tags": ["<lowercase tag>", ...], "confidence": <0.0-1.0>,',
