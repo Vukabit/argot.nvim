@@ -77,5 +77,6 @@ The manual is the source of depth: `:h gloss`. Design rationale lives in
 ```sh
 make deps   # clone test dependencies into .deps/
 make test   # run the suite headlessly
-make lint   # stylua --check + selene
+make lint   # stylua --check + selene + version-marker consistency
+scripts/version.sh set 0.2.0   # bump every version marker at once
 ```
