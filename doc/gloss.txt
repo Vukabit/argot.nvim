@@ -1,0 +1,188 @@
+*gloss.txt*  A per-project glossary for your codebase's jargon and acronyms
+
+Author:  Shawn Bays
+License: MIT
+
+==============================================================================
+CONTENTS                                                        *gloss*
+
+  1. Introduction ............................. |gloss-introduction|
+  2. Quickstart ............................... |gloss-quickstart|
+  3. Commands ................................. |:Gloss|
+  4. Keymaps .................................. |gloss-keymaps|
+  5. Configuration ............................ |gloss.setup|
+  6. Storage and the .gloss/ directory ........ |gloss-storage|
+  7. AI providers ............................. |gloss-ai|
+  8. FAQ and troubleshooting .................. |gloss-faq|
+
+NOTE: gloss.nvim is pre-0.1. Sections marked [planned] describe designed but
+not yet built behavior; see DESIGN.md in the repository for the build order.
+
+==============================================================================
+1. INTRODUCTION                                 *gloss-introduction*
+
+gloss.nvim keeps a dictionary of the terms, acronyms, and jargon a project
+actually uses. Look up the word under the cursor and its definition appears
+in a floating window holding a real, editable buffer; if no definition
+exists, you can write one on the spot, store it in the project's glossary or
+your global dictionary, or [planned] let a pluggable AI provider propose one
+from codebase context.
+
+A glossary lives outside the repository by default. Running `:Gloss init -p`
+moves it into a `.gloss/` directory as line-based JSON that diffs, merges,
+and reviews like any other committed text, so a cloned repository brings its
+glossary along with zero setup.
+
+==============================================================================
+2. QUICKSTART                                   *gloss-quickstart*
+
+[planned] Fills in when the lookup pipeline lands (milestone 2).
+
+Requirements: Neovim 0.11+. The SQLite backend (global dictionary and
+out-of-repo stores) additionally needs kkharji/sqlite.lua and libsqlite3;
+run |:checkhealth| gloss to verify.
+
+==============================================================================
+3. COMMANDS                                     *:Gloss*
+
+All functionality is reachable through one command with completed
+subcommands. Most are [planned]; they currently report their status.
+
+  :Gloss [lookup]                               *:Gloss-lookup*
+      Resolve the word under the cursor (or the visual selection) through
+      the store chain and show its definition. [planned]
+
+  :Gloss add [{term}]                           *:Gloss-add*
+      Open a new-entry buffer; writing it asks project or global. [planned]
+
+  :Gloss edit {term}   :Gloss delete {term}     *:Gloss-edit* *:Gloss-delete*
+      Direct entry operations, term-completed. [planned]
+
+  :Gloss list [#tag]                            *:Gloss-list*
+      Current project's entries, optionally filtered by tag. [planned]
+
+  :Gloss search [{query}]                       *:Gloss-search*
+      Fuzzy search across every store. `#tag` tokens filter exactly; other
+      tokens match terms, aliases, expansions. Selecting an entry offers
+      edit, copy to another store, move, delete. [planned]
+
+  :Gloss init [-p]                              *:Gloss-init*
+      Register the project. Bare: create its out-of-repo store. With -p:
+      create `.gloss/` in the repository and fold any existing out-of-repo
+      entries into it. [planned]
+
+  :Gloss deinit                                 *:Gloss-deinit*
+      Convert an in-repo glossary back to an out-of-repo store. [planned]
+
+  :Gloss projects  :Gloss relink  :Gloss gc     *:Gloss-projects*
+      Browse registered projects; re-attach a moved repository; clean up
+      registry entries whose roots vanished (confirmed, never automatic).
+      [planned]
+
+  :Gloss export [{path}]  :Gloss import [{path}]  *:Gloss-export*
+      JSONL out of / into the current store. [planned]
+
+  :Gloss ai on|off|status                       *:Gloss-ai*
+      Per-project consent gate for sending code context to the configured
+      AI provider. Off until explicitly enabled. [planned]
+
+  :Gloss doctor                                 *:Gloss-doctor*
+      Report damaged glossary lines, duplicate terms across stores, and
+      stale registry paths. [planned]
+
+==============================================================================
+4. KEYMAPS                                      *gloss-keymaps*
+
+No mappings are installed by default. Every action has a <Plug> mapping;
+an opt-in curated set installs under a configurable prefix and never
+clobbers an existing mapping (skipped maps are reported by
+`:checkhealth gloss`). [planned]
+
+  <Plug>(GlossLookup)    normal and visual mode lookup
+  <Plug>(GlossAdd)       new entry
+  <Plug>(GlossSearch)    cross-store search
+  <Plug>(GlossList)      current project's entries
+  <Plug>(GlossProjects)  projects browser
+
+==============================================================================
+5. CONFIGURATION                                *gloss.setup* *gloss-config*
+
+Calling setup() is optional; everything works with defaults. >lua
+
+  require("gloss").setup({
+    project_dir = ".gloss",
+    resolve = { "project", "global" },
+    on_miss = { "prompt" },
+    keymaps = false,
+    case = { short_acronym_len = 3 },
+    ai = { provider = nil },
+    data_dir = nil,
+  })
+<
+                                                *gloss.setup.project_dir*
+project_dir       Directory name whose presence at the project root selects
+                  in-repo mode. Default: `".gloss"`.
+
+                                                *gloss.setup.resolve*
+resolve           Ordered store chain for lookups. List-valued options
+                  replace the default entirely rather than merging.
+                  Default: `{ "project", "global" }`.
+
+                                                *gloss.setup.on_miss*
+on_miss           Ordered fallback chain when no store has the term.
+                  Default: `{ "prompt" }`.
+
+                                                *gloss.setup.keymaps*
+keymaps           `false` (nothing installed), `true` (curated set under
+                  `<leader>g`), or a table with `prefix` plus per-action
+                  overrides where each action takes a lhs string or `false`.
+
+                                                *gloss.setup.case*
+case              `short_acronym_len`: uppercase terms at or under this
+                  length match case-sensitively. Default: 3.
+
+                                                *gloss.setup.ai*
+ai                `provider`: a GlossProvider table (|gloss-ai|), or nil to
+                  disable the AI miss handler.
+
+                                                *gloss.setup.data_dir*
+data_dir          Override where the global dictionary, registry, and
+                  out-of-repo project stores live.
+                  Default: `stdpath("data") .. "/gloss"`.
+
+==============================================================================
+6. STORAGE                                      *gloss-storage* *gloss-jsonl*
+
+Out-of-repo stores and the global dictionary are SQLite databases under
+|gloss.setup.data_dir|, WAL mode, safe across concurrent Neovim instances.
+
+In-repo glossaries are JSONL: `.gloss/glossary.jsonl`, one entry per line,
+sorted by term, fixed key order, version header on line one. Recommended
+gitattribute: >
+
+  .gloss/glossary.jsonl merge=union
+<
+Damaged lines (bad merges, hand edits) are skipped on load, preserved
+verbatim on write, and reported by `:Gloss doctor`.
+
+==============================================================================
+7. AI PROVIDERS                                 *gloss-ai* *gloss-provider*
+
+[planned] A provider is a table with a `name` and one function: >lua
+
+  propose(request, callback)
+<
+`request` carries the term plus context gathered by gloss (surrounding
+lines, capped project-wide usages, README head). The callback receives a
+table with `definition`, `expansion`, and `confidence`, or `questions` (a
+list of clarifying questions gloss relays to the user, one round-trip).
+Proposals are never saved automatically; they open in the review buffer
+marked as AI-sourced. Providers run only after `:Gloss ai on` in that
+project.
+
+==============================================================================
+8. FAQ                                          *gloss-faq*
+
+[planned]
+
+vim:tw=78:ts=8:noet:ft=help:norl:

@@ -1,0 +1,10 @@
+{
+  "runtime.version": "LuaJIT",
+  "workspace.library": [
+    "$VIMRUNTIME/lua",
+    ".deps/mini.nvim/lua",
+    ".deps/sqlite.lua/lua"
+  ],
+  "workspace.checkThirdParty": false,
+  "diagnostics.globals": ["vim", "MiniTest"]
+}

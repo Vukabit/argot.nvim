@@ -1,0 +1,9 @@
+# selene standard library definition for the Neovim runtime
+[selene]
+base = "lua51"
+
+[globals.vim]
+any = true
+
+[globals.MiniTest]
+any = true
