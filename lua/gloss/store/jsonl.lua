@@ -57,12 +57,15 @@ function M.open(path)
   return self
 end
 
-function Store:_mtime()
+function Store:_stamp()
   local stat = vim.uv.fs_stat(self.path)
   if not stat then
     return nil
   end
-  return stat.mtime.sec * 1e9 + stat.mtime.nsec
+  -- inode + size + mtime, not mtime alone: our own writes are tmp+rename
+  -- (new inode every time), and in-place edits change the size, so change
+  -- detection survives filesystems with coarse timestamps (CI runners)
+  return ("%d:%d:%d:%d"):format(stat.ino, stat.size, stat.mtime.sec, stat.mtime.nsec)
 end
 
 function Store:_load()
@@ -70,8 +73,8 @@ function Store:_load()
   self.bad_lines = {}
   self.duplicates = {}
   self.version = nil
-  self.mtime = self:_mtime()
-  if not self.mtime then
+  self.stamp = self:_stamp()
+  if not self.stamp then
     return
   end
   for lnum, line in ipairs(vim.fn.readfile(self.path)) do
@@ -94,7 +97,7 @@ function Store:_load()
 end
 
 function Store:_refresh()
-  if self:_mtime() ~= self.mtime then
+  if self:_stamp() ~= self.stamp then
     self:_load()
   end
 end
@@ -174,7 +177,7 @@ function Store:_write()
     vim.uv.fs_unlink(tmp)
     error(("gloss: failed replacing %s: %s"):format(self.path, err or "unknown error"))
   end
-  self.mtime = self:_mtime()
+  self.stamp = self:_stamp()
 end
 
 return M
