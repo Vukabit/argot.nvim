@@ -26,7 +26,14 @@ vim.keymap.set("n", "<Plug>(GlossAdd)", function()
 end, { desc = "gloss: add entry" })
 
 vim.keymap.set("n", "<Plug>(GlossSearch)", function()
-  vim.cmd("Gloss search")
+  -- prefer gloss's own telescope picker (live fuzzy bar) when telescope is
+  -- around; fall back to the vim.ui.select flow otherwise
+  local ok = pcall(function()
+    require("telescope").extensions.gloss.gloss()
+  end)
+  if not ok then
+    vim.cmd("Gloss search")
+  end
 end, { desc = "gloss: search all stores" })
 
 vim.keymap.set("n", "<Plug>(GlossList)", function()

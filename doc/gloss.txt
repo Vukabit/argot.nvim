@@ -171,8 +171,10 @@ clobbers an existing mapping (skipped maps are reported once and by
 
   <Plug>(GlossLookup)    normal and visual mode lookup
   <Plug>(GlossAdd)       new entry
-  <Plug>(GlossSearch)    cross-store search
-  <Plug>(GlossList)      current project's entries
+  <Plug>(GlossSearch)    cross-store search; opens gloss's telescope
+                         picker (live fuzzy bar) when telescope.nvim is
+                         installed, the |vim.ui.select| flow otherwise
+  <Plug>(GlossList)      current context's entries
   <Plug>(GlossProjects)  projects browser
 
 The curated set (|gloss.setup.keymaps|), default prefix `<leader>g`:
