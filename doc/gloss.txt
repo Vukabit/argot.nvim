@@ -10,10 +10,11 @@ CONTENTS                                                        *gloss*
   2. Quickstart ............................... |gloss-quickstart|
   3. Commands ................................. |:Gloss|
   4. Keymaps .................................. |gloss-keymaps|
-  5. Configuration ............................ |gloss.setup|
-  6. Storage and the .gloss/ directory ........ |gloss-storage|
-  7. AI providers ............................. |gloss-ai|
-  8. FAQ and troubleshooting .................. |gloss-faq|
+  5. The definition buffer .................... |gloss-buffer|
+  6. Configuration ............................ |gloss.setup|
+  7. Storage and the .gloss/ directory ........ |gloss-storage|
+  8. AI providers ............................. |gloss-ai|
+  9. FAQ and troubleshooting .................. |gloss-faq|
 
 NOTE: gloss.nvim is pre-0.1. Sections marked [planned] describe designed but
 not yet built behavior; see DESIGN.md in the repository for the build order.
@@ -36,27 +37,43 @@ glossary along with zero setup.
 ==============================================================================
 2. QUICKSTART                                   *gloss-quickstart*
 
-[planned] Fills in when the lookup pipeline lands (milestone 2).
-
 Requirements: Neovim 0.11+. The SQLite backend (global dictionary and
 out-of-repo stores) additionally needs kkharji/sqlite.lua and libsqlite3;
 run |:checkhealth| gloss to verify.
+
+Optionally enable the curated keymaps: >lua
+
+  require("gloss").setup({ keymaps = true })
+<
+Then, in any project:
+
+1. Put the cursor on a term and press `<leader>gg` (or run |:Gloss|). A known
+   term opens its definition; an unknown one opens a prefilled new-entry
+   buffer (|gloss-buffer|).
+2. Write the definition below the blank line, `:w`, and pick the project or
+   global store. Saving to the project scope registers the project
+   automatically; `:Gloss init` does it explicitly, `:Gloss init -p` puts
+   the glossary in the repository instead.
+3. `q` closes the float.
 
 ==============================================================================
 3. COMMANDS                                     *:Gloss*
 
 All functionality is reachable through one command with completed
-subcommands. Most are [planned]; they currently report their status.
+subcommands. [planned] ones currently report their status.
 
-  :Gloss [lookup]                               *:Gloss-lookup*
-      Resolve the word under the cursor (or the visual selection) through
-      the store chain and show its definition. [planned]
+  :Gloss [lookup] [{term}]                      *:Gloss-lookup*
+      Resolve {term} (default: the word under the cursor, or the visual
+      selection for multi-word terms) through the store chain
+      (|gloss.setup.resolve|) and open its definition. On a miss, the
+      |gloss.setup.on_miss| chain runs; the default opens a new-entry
+      buffer.
 
   :Gloss add [{term}]                           *:Gloss-add*
-      Open a new-entry buffer; writing it asks project or global. [planned]
+      Open a new-entry buffer; writing it asks project or global.
 
   :Gloss edit {term}   :Gloss delete {term}     *:Gloss-edit* *:Gloss-delete*
-      Direct entry operations, term-completed. [planned]
+      Direct entry operations, term-completed. Delete confirms first.
 
   :Gloss list [#tag]                            *:Gloss-list*
       Current project's entries, optionally filtered by tag. [planned]
@@ -67,12 +84,18 @@ subcommands. Most are [planned]; they currently report their status.
       edit, copy to another store, move, delete. [planned]
 
   :Gloss init [-p]                              *:Gloss-init*
-      Register the project. Bare: create its out-of-repo store. With -p:
-      create `.gloss/` in the repository and fold any existing out-of-repo
-      entries into it. [planned]
+      Register the project. Bare: create its out-of-repo store (also
+      happens implicitly on the first save to the project scope). With -p:
+      create the in-repo glossary and fold any existing out-of-repo
+      entries into it (the old DB is backed up first). Offers the
+      merge=union gitattribute (|gloss-jsonl|). If the registry knows this
+      repository under another path (a moved or re-cloned repo), init
+      offers to relink instead of creating a second glossary.
 
   :Gloss deinit                                 *:Gloss-deinit*
-      Convert an in-repo glossary back to an out-of-repo store. [planned]
+      Convert an in-repo glossary back to an out-of-repo store. Never
+      deletes anything inside the repository; it prints the removal
+      command instead.
 
   :Gloss projects  :Gloss relink  :Gloss gc     *:Gloss-projects*
       Browse registered projects; re-attach a moved repository; clean up
@@ -94,9 +117,9 @@ subcommands. Most are [planned]; they currently report their status.
 4. KEYMAPS                                      *gloss-keymaps*
 
 No mappings are installed by default. Every action has a <Plug> mapping;
-an opt-in curated set installs under a configurable prefix and never
-clobbers an existing mapping (skipped maps are reported by
-`:checkhealth gloss`). [planned]
+the opt-in curated set installs under a configurable prefix and never
+clobbers an existing mapping (skipped maps are reported once and by
+`:checkhealth gloss`).
 
   <Plug>(GlossLookup)    normal and visual mode lookup
   <Plug>(GlossAdd)       new entry
@@ -104,8 +127,32 @@ clobbers an existing mapping (skipped maps are reported by
   <Plug>(GlossList)      current project's entries
   <Plug>(GlossProjects)  projects browser
 
+The curated set (|gloss.setup.keymaps|), default prefix `<leader>g`:
+suffix `g` lookup, `a` add, `s` search, `l` list, `p` projects. Each action
+takes its own lhs or `false` in the keymaps table.
+
 ==============================================================================
-5. CONFIGURATION                                *gloss.setup* *gloss-config*
+5. THE DEFINITION BUFFER                        *gloss-buffer*
+
+Definitions open in a floating window holding a real buffer
+('buftype' = acwrite, 'filetype' = markdown): edit with everything you own,
+`:w` persists, `q` closes (blocked while modified). Add and edit are the
+same buffer. The round-trip format is a header block, one blank line, then
+the markdown definition: >
+
+  term: DLQ
+  expansion: dead letter queue
+  aliases: dlqs, dead-letter queue
+  tags: aws, queue
+
+  Queue that collects messages which could not be processed.
+<
+All four header keys are always shown; empty values are fine. Editing the
+`term:` line renames the entry on the next write. A new entry asks which
+store to save to (project or global) on its first write.
+
+==============================================================================
+6. CONFIGURATION                                *gloss.setup* *gloss-config*
 
 Calling setup() is optional; everything works with defaults. >lua
 
@@ -151,7 +198,7 @@ data_dir          Override where the global dictionary, registry, and
                   Default: `stdpath("data") .. "/gloss"`.
 
 ==============================================================================
-6. STORAGE                                      *gloss-storage* *gloss-jsonl*
+7. STORAGE                                      *gloss-storage* *gloss-jsonl*
 
 Out-of-repo stores and the global dictionary are SQLite databases under
 |gloss.setup.data_dir|, WAL mode, safe across concurrent Neovim instances.
@@ -166,7 +213,7 @@ Damaged lines (bad merges, hand edits) are skipped on load, preserved
 verbatim on write, and reported by `:Gloss doctor`.
 
 ==============================================================================
-7. AI PROVIDERS                                 *gloss-ai* *gloss-provider*
+8. AI PROVIDERS                                 *gloss-ai* *gloss-provider*
 
 [planned] A provider is a table with a `name` and one function: >lua
 
@@ -181,7 +228,7 @@ marked as AI-sourced. Providers run only after `:Gloss ai on` in that
 project.
 
 ==============================================================================
-8. FAQ                                          *gloss-faq*
+9. FAQ                                          *gloss-faq*
 
 [planned]
 

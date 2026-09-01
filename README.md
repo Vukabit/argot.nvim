@@ -31,8 +31,19 @@ lazy.nvim:
 
 ## Quickstart
 
-Nothing works yet beyond `:Gloss` subcommand completion and
-`:checkhealth gloss`; this section fills in as milestones land.
+```lua
+require("gloss").setup({ keymaps = true })  -- optional; everything works without setup()
+```
+
+Put the cursor on a term and press `<leader>gg` (or `:Gloss`): a known term
+opens its definition in an editable float; an unknown one opens a prefilled
+new-entry buffer. Write the definition, `:w`, pick project or global. `q`
+closes. `:Gloss init -p` moves a project's glossary into the repo as
+git-friendly JSONL so teammates get it on clone.
+
+Working today: lookup, add, edit, delete, init/deinit with migration, the
+keymap layers, `:checkhealth gloss`. Landing next: cross-store fuzzy search,
+list, the projects browser, then AI providers.
 
 ## Documentation
 

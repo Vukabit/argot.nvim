@@ -81,10 +81,13 @@ and aliases cover exceptions.
 
 ## Definition buffer
 
-The float shows a real buffer (`buftype=acwrite`, markdown with a small
-`key: value` header block). Editing uses every motion the user owns; `:w`
-persists via `BufWriteCmd`; add and edit are one code path. Exact header
-format gets pinned when milestone 2 builds it.
+The float shows a real buffer (`buftype=acwrite`, markdown). Editing uses
+every motion the user owns; `:w` persists via `BufWriteCmd`; add and edit are
+one code path. The pinned round-trip format: a `key: value` header block
+(term, expansion, aliases, tags; all four always rendered, aliases/tags
+comma-separated), one blank line, then the markdown definition body. Editing
+the `term:` line is a rename. An entry whose source was `ai` becomes
+`ai_edited` on the first human save.
 
 ## Keymaps: map frequency, not surface area
 
@@ -106,7 +109,8 @@ silently rot.
 ## Build order
 
 1. Scaffold, tooling, storage adapters with tests (done)
-2. Registry, init/deinit, lookup pipeline, definition buffer (daily-drivable)
+2. Registry, init/deinit, lookup pipeline, definition buffer, keymap layers
+   (done; the plugin is daily-drivable from here)
 3. Cross-DB fuzzy search with copy/move actions, list, projects
 4. AI handler, CLI reference adapter, consent gate
 5. doctor/gc/export, hover.nvim provider, full vimdoc, v0.1.0
