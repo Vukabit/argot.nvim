@@ -7,6 +7,7 @@ test: deps
 
 lint:
 	stylua --check lua plugin tests scripts
+	selene lua plugin tests scripts
 
 deps: $(DEPS)/mini.nvim $(DEPS)/sqlite.lua $(DEPS)/hover.nvim $(DEPS)/plenary.nvim $(DEPS)/telescope.nvim
 

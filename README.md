@@ -44,6 +44,7 @@ the machine until you run `:Gloss ai on` in that project:
 
 ```lua
 require("gloss").setup({
+  keymaps = true,
   ai = { provider = require("gloss.providers.cli").new({ cmd = { "claude", "-p" } }) },
   on_miss = { "ai", "prompt" },
 })
@@ -53,14 +54,18 @@ Proposals open in the review buffer marked as AI-sourced; nothing is saved
 until you `:w`.
 
 The full tour lives in the manual (`:h gloss`): lookup and the editable
-definition float, per-project and global stores, in-repo mode with sane git
-merges, cross-store fuzzy search with copy/move, the projects browser,
-relink for moved repos, `:Gloss doctor`/`gc`/`export`/`import`, a
-[hover.nvim](https://github.com/lewis6991/hover.nvim) provider registered
-automatically, and `:checkhealth gloss`. Integrations: a cached statusline
-component (`require("gloss").statusline()`), opt-in extmark highlighting of
-known terms (`:Gloss highlight`), and a telescope extension
-(`:Telescope gloss` after `load_extension("gloss")`).
+definition float, per-project and global stores (project definitions shadow
+global ones), `[[term]]` cross-links between definitions (gd to follow,
+CTRL-X CTRL-O to complete), in-repo mode with sane git merges, cross-store
+fuzzy search with copy/move, the projects browser, relink for moved repos,
+`:Gloss doctor`/`gc`/`export`/`import`, `:Gloss reset` (the nuclear option,
+which archives instead of deleting), and `:checkhealth gloss`. Integrations:
+a cached statusline component (`require("gloss").statusline()`), opt-in
+extmark highlighting of known terms (`:Gloss highlight`), a telescope
+extension (`:Telescope gloss` after `load_extension("gloss")`; the search
+keymap uses it automatically), and a
+[hover.nvim](https://github.com/lewis6991/hover.nvim) provider module
+(`"gloss.providers.hover"` in hover's provider list).
 
 ## Documentation
 
@@ -72,5 +77,5 @@ The manual is the source of depth: `:h gloss`. Design rationale lives in
 ```sh
 make deps   # clone test dependencies into .deps/
 make test   # run the suite headlessly
-make lint   # stylua --check
+make lint   # stylua --check + selene
 ```

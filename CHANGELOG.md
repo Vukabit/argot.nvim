@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (unreleased; cut when the repo lands at Vukabit/gloss.nvim)
+## 0.1.0 (2026-09-01)
 
 Everything in the manual works:
 
@@ -14,7 +14,8 @@ Everything in the manual works:
 - case policy: short all-uppercase acronyms match case-sensitively, with
   per-entry overrides
 - cross-store fuzzy search (`#tag` grammar) with edit/copy/move/delete
-  actions, `:Gloss list`, the projects browser, `relink`
+  actions; `:Gloss list` covers the whole lookup context (project entries
+  shadow global ones); the projects browser; `relink`
 - AI providers: pluggable `propose(request, callback)` contract, bundled
   CLI adapter for any command, per-project consent gate (`:Gloss ai on`),
   one clarifying-questions round, proposals land as reviewable drafts
@@ -27,7 +28,7 @@ Everything in the manual works:
   no-clobber install; hover.nvim provider module
 - integrations: cached statusline component, opt-in extmark highlighting
   of known terms (case-policy aware), telescope extension with copy/move/
-  delete mappings
+  delete mappings (the search keymap prefers it for a live fuzzy bar)
 - cross-links: `[[term]]` references between definitions; follow with gd
   or Enter (undefined targets open prefilled, so glossaries can be written
   links-first), complete after `[[` with CTRL-X CTRL-O, dangling links
