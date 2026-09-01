@@ -1,10 +1,10 @@
 #!/bin/sh
-# One source of truth for gloss's version markers.
+# One source of truth for argot's version markers.
 #
 #   scripts/version.sh check        verify every marker agrees (CI gate)
 #   scripts/version.sh set <x.y.z>  bump every marker at once
 #
-# Markers: M.version in lua/gloss/init.lua, the doc/gloss.txt header line,
+# Markers: M.version in lua/argot/init.lua, the doc/argot.txt header line,
 # and the newest CHANGELOG.md section heading. The latest git tag is
 # compared informationally: it may lag mid-cycle, but must equal v<version>
 # when a release is cut.
@@ -12,14 +12,14 @@
 set -eu
 cd "$(dirname "$0")/.."
 
-lua_v=$(grep -o 'M.version = "[0-9.]*"' lua/gloss/init.lua | grep -o '[0-9][0-9.]*')
-doc_v=$(grep -o '^gloss\.nvim [0-9.]*' doc/gloss.txt | awk '{print $2}')
+lua_v=$(grep -o 'M.version = "[0-9.]*"' lua/argot/init.lua | grep -o '[0-9][0-9.]*')
+doc_v=$(grep -o '^argot\.nvim [0-9.]*' doc/argot.txt | awk '{print $2}')
 log_v=$(grep -m1 '^## [0-9]' CHANGELOG.md | awk '{print $2}')
 
 case "${1:-check}" in
 check)
   status=0
-  [ "$lua_v" = "$doc_v" ] || { echo "version mismatch: init.lua=$lua_v doc/gloss.txt=$doc_v"; status=1; }
+  [ "$lua_v" = "$doc_v" ] || { echo "version mismatch: init.lua=$lua_v doc/argot.txt=$doc_v"; status=1; }
   [ "$lua_v" = "$log_v" ] || { echo "version mismatch: init.lua=$lua_v CHANGELOG.md=$log_v"; status=1; }
   tag=$(git describe --tags --abbrev=0 2>/dev/null || true)
   if [ -n "$tag" ] && [ "$tag" != "v$lua_v" ]; then
@@ -30,8 +30,8 @@ check)
   ;;
 set)
   new="${2:?usage: scripts/version.sh set <x.y.z>}"
-  perl -pi -e "s/M\\.version = \"[0-9.]+\"/M.version = \"$new\"/" lua/gloss/init.lua
-  perl -pi -e "s/^gloss\\.nvim [0-9.]+/gloss.nvim $new/" doc/gloss.txt
+  perl -pi -e "s/M\\.version = \"[0-9.]+\"/M.version = \"$new\"/" lua/argot/init.lua
+  perl -pi -e "s/^argot\\.nvim [0-9.]+/argot.nvim $new/" doc/argot.txt
   if ! grep -q "^## $new" CHANGELOG.md; then
     tmp=$(mktemp)
     { head -1 CHANGELOG.md; printf '\n## %s (unreleased)\n' "$new"; tail -n +2 CHANGELOG.md; } > "$tmp"

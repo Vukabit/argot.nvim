@@ -2,11 +2,11 @@
 --- stdout. This single adapter makes `claude -p`, `llm`, `ollama run`, or a
 --- homegrown agent script work with zero SDK dependencies:
 ---
----   ai = { provider = require("gloss.providers.cli").new({ cmd = { "claude", "-p" } }) }
+---   ai = { provider = require("argot.providers.cli").new({ cmd = { "claude", "-p" } }) }
 
 local M = {}
 
----@param req table the gloss request bundle
+---@param req table the argot request bundle
 ---@return string
 function M.default_prompt(req)
   return table.concat({
@@ -56,7 +56,7 @@ end
 function M.new(opts)
   assert(
     type(opts) == "table" and type(opts.cmd) == "table" and #opts.cmd > 0,
-    "gloss: the cli provider needs opts.cmd, e.g. { cmd = { 'claude', '-p' } }"
+    "argot: the cli provider needs opts.cmd, e.g. { cmd = { 'claude', '-p' } }"
   )
   local provider = { name = opts.name or vim.fs.basename(opts.cmd[1]) }
 
@@ -77,7 +77,7 @@ function M.new(opts)
     end)
     if not ok then
       vim.schedule(function()
-        vim.notify("gloss: failed to run the provider command: " .. tostring(err), vim.log.levels.ERROR)
+        vim.notify("argot: failed to run the provider command: " .. tostring(err), vim.log.levels.ERROR)
       end)
       cb(nil)
     end

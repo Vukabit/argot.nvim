@@ -45,12 +45,12 @@ function M.write_json(path, tbl)
   -- other's in-flight write
   local tmp = ("%s.%d.tmp"):format(path, vim.uv.os_getpid())
   if vim.fn.writefile({ vim.json.encode(tbl) }, tmp) ~= 0 then
-    error(("gloss: failed writing %s"):format(tmp))
+    error(("argot: failed writing %s"):format(tmp))
   end
   local ok, err = vim.uv.fs_rename(tmp, path)
   if not ok then
     vim.uv.fs_unlink(tmp)
-    error(("gloss: failed replacing %s: %s"):format(path, err or "unknown error"))
+    error(("argot: failed replacing %s: %s"):format(path, err or "unknown error"))
   end
 end
 

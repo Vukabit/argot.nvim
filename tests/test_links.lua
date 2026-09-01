@@ -1,10 +1,10 @@
 local eq = MiniTest.expect.equality
 
-local config = require("gloss.config")
-local defbuf = require("gloss.defbuf")
-local jsonl = require("gloss.store.jsonl")
-local links = require("gloss.links")
-local project = require("gloss.project")
+local config = require("argot.config")
+local defbuf = require("argot.defbuf")
+local jsonl = require("argot.store.jsonl")
+local links = require("argot.links")
+local project = require("argot.project")
 
 local tmpdir, old_cwd
 
@@ -25,7 +25,7 @@ local T = MiniTest.new_set({
         end
       end
       for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-        if vim.api.nvim_buf_get_name(buf):find("^gloss://") then
+        if vim.api.nvim_buf_get_name(buf):find("^argot://") then
           pcall(vim.api.nvim_buf_delete, buf, { force = true })
         end
       end
@@ -136,11 +136,11 @@ T["doctor reports dangling links with the fix"] = function()
     { term = "DLQ", definition = "see [[SQS]] and the [[ghost protocol]]" },
     { term = "SQS", definition = "d" },
   })
-  local lines, problems = require("gloss.doctor").report()
+  local lines, problems = require("argot.doctor").report()
   local text = table.concat(lines, "\n")
   eq(problems, 1)
   eq(text:find("links to %[%[ghost protocol%]%]") ~= nil, true)
-  eq(text:find(":Gloss add ghost protocol") ~= nil, true)
+  eq(text:find(":Argot add ghost protocol") ~= nil, true)
 end
 
 return T

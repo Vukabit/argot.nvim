@@ -1,8 +1,8 @@
 local eq = MiniTest.expect.equality
 
-local config = require("gloss.config")
-local hover = require("gloss.hover")
-local project = require("gloss.project")
+local config = require("argot.config")
+local hover = require("argot.hover")
+local project = require("argot.project")
 
 local tmpdir
 
@@ -35,7 +35,7 @@ T["the provider finds entries and renders markdown"] = function()
   local root = vim.fs.joinpath(tmpdir, "proj")
   vim.fn.mkdir(root, "p")
   local res = project.init_in_repo(root)
-  require("gloss.store.jsonl").open(res.path):upsert({
+  require("argot.store.jsonl").open(res.path):upsert({
     term = "DLQ",
     expansion = "dead letter queue",
     tags = { "aws" },
@@ -65,10 +65,10 @@ T["the provider finds entries and renders markdown"] = function()
 end
 
 T["the provider module satisfies hover.nvim's Hover.Provider contract"] = function()
-  package.loaded["gloss.providers.hover"] = nil
-  local provider = require("gloss.providers.hover")
+  package.loaded["argot.providers.hover"] = nil
+  local provider = require("argot.providers.hover")
   eq(type(provider), "table")
-  eq(provider.name, "Gloss")
+  eq(provider.name, "Argot")
   eq(type(provider.execute), "function")
   eq(type(provider.enabled), "function")
   eq(type(provider.priority), "number")
@@ -80,7 +80,7 @@ T["modern hover.nvim accepts the provider module in its config"] = function()
   end
   local ok, err = pcall(function()
     require("hover").config({
-      providers = { "gloss.providers.hover" },
+      providers = { "argot.providers.hover" },
     })
   end)
   eq(ok, true, err)

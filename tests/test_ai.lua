@@ -1,8 +1,8 @@
 local eq = MiniTest.expect.equality
 
-local ai = require("gloss.ai")
-local config = require("gloss.config")
-local defbuf = require("gloss.defbuf")
+local ai = require("argot.ai")
+local config = require("argot.config")
+local defbuf = require("argot.defbuf")
 
 local tmpdir
 
@@ -14,9 +14,9 @@ local function close_floats()
   end
 end
 
-local function find_gloss_buf()
+local function find_argot_buf()
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_loaded(buf) and vim.api.nvim_buf_get_name(buf):find("^gloss://") then
+    if vim.api.nvim_buf_is_loaded(buf) and vim.api.nvim_buf_get_name(buf):find("^argot://") then
       return buf
     end
   end
@@ -31,7 +31,7 @@ local T = MiniTest.new_set({
     end,
     post_case = function()
       close_floats()
-      local buf = find_gloss_buf()
+      local buf = find_argot_buf()
       if buf then
         pcall(vim.api.nvim_buf_delete, buf, { force = true })
       end
@@ -103,11 +103,11 @@ T["a proposal opens the review buffer marked ai; verbatim accept stays ai"] = fu
       },
     },
   })
-  ai.set_consent((require("gloss.project").detect()), true)
+  ai.set_consent((require("argot.project").detect()), true)
 
   eq(ai.propose_for("DLQ"), true)
-  vim.wait(1000, find_gloss_buf)
-  local buf = find_gloss_buf()
+  vim.wait(1000, find_argot_buf)
+  local buf = find_argot_buf()
   eq(buf ~= nil, true)
   local text = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n")
   eq(text:find("queue for poison messages") ~= nil, true)
@@ -152,10 +152,10 @@ T["an edited proposal becomes ai_edited"] = function()
       },
     },
   })
-  ai.set_consent((require("gloss.project").detect()), true)
+  ai.set_consent((require("argot.project").detect()), true)
   ai.propose_for("DLQ")
-  vim.wait(1000, find_gloss_buf)
-  local buf = find_gloss_buf()
+  vim.wait(1000, find_argot_buf)
+  local buf = find_argot_buf()
 
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   lines[#lines] = "human words"
@@ -193,26 +193,26 @@ T["questions run one interview round, then the provider must answer"] = function
       },
     },
   })
-  ai.set_consent((require("gloss.project").detect()), true)
+  ai.set_consent((require("argot.project").detect()), true)
 
   local orig_input = vim.ui.input
   vim.ui.input = function(_, cb)
     cb("SQS")
   end
   ai.propose_for("DLQ")
-  vim.wait(1000, find_gloss_buf)
+  vim.wait(1000, find_argot_buf)
   vim.ui.input = orig_input
 
   eq(#rounds, 2)
   eq(rounds[2].answers[1].question, "Which queue system?")
   eq(rounds[2].answers[1].answer, "SQS")
-  local buf = find_gloss_buf()
+  local buf = find_argot_buf()
   local text = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n")
   eq(text:find("informed by SQS") ~= nil, true)
 end
 
 T["cli provider round-trips json, tolerates fences, rejects garbage"] = function()
-  local cli = require("gloss.providers.cli")
+  local cli = require("argot.providers.cli")
 
   local function run(shell_cmd)
     local provider = cli.new({ cmd = { "sh", "-c", shell_cmd }, name = "sh" })
@@ -238,7 +238,7 @@ T["cli provider round-trips json, tolerates fences, rejects garbage"] = function
 end
 
 T["cli provider feeds the prompt on stdin"] = function()
-  local cli = require("gloss.providers.cli")
+  local cli = require("argot.providers.cli")
   local out = vim.fs.joinpath(tmpdir, "stdin.txt")
   local provider = cli.new({ cmd = { "sh", "-c", ("cat > %s; printf '{}'"):format(out) } })
   local done

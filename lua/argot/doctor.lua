@@ -1,4 +1,4 @@
---- :Gloss doctor: the report of things silently wrong. Read-only; every
+--- :Argot doctor: the report of things silently wrong. Read-only; every
 --- finding names the command that fixes it.
 
 local M = {}
@@ -6,9 +6,9 @@ local M = {}
 ---@param opts? {startpath?: string}
 ---@return string[] lines, integer problems
 function M.report(opts)
-  local search = require("gloss.search")
-  local project = require("gloss.project")
-  local lines = { "gloss doctor", "" }
+  local search = require("argot.search")
+  local project = require("argot.project")
+  local lines = { "argot doctor", "" }
   local problems = 0
 
   local sources = search.sources(opts)
@@ -55,7 +55,7 @@ function M.report(opts)
       end
     end
     if #labels > 1 then
-      overlap[#overlap + 1] = ("%q is defined in %s (project shadows global on lookup; :Gloss search %s)"):format(
+      overlap[#overlap + 1] = ("%q is defined in %s (project shadows global on lookup; :Argot search %s)"):format(
         group[1].entry.term,
         table.concat(labels, " "),
         group[1].entry.term
@@ -64,9 +64,9 @@ function M.report(opts)
   end
 
   -- [[links]] pointing at terms no store defines
-  local links = require("gloss.links")
-  local lookup = require("gloss.lookup")
-  local case_cfg = require("gloss.config").options.case
+  local links = require("argot.links")
+  local lookup = require("argot.lookup")
+  local case_cfg = require("argot.config").options.case
   local all_entries = vim.tbl_map(function(item)
     return item.entry
   end, collected)
@@ -74,7 +74,7 @@ function M.report(opts)
     for _, target in ipairs(links.extract(item.entry.definition)) do
       if not lookup.policy_match(all_entries, target, case_cfg) then
         problems = problems + 1
-        lines[#lines + 1] = ("[%s] %q links to [[%s]], which is not defined anywhere (:Gloss add %s)"):format(
+        lines[#lines + 1] = ("[%s] %q links to [[%s]], which is not defined anywhere (:Argot add %s)"):format(
           item.label,
           item.entry.term,
           target,
@@ -86,12 +86,12 @@ function M.report(opts)
 
   for _, stale in ipairs(project.stale_entries()) do
     problems = problems + 1
-    lines[#lines + 1] = ("registry root no longer exists: %s (:Gloss gc)"):format(stale.root)
+    lines[#lines + 1] = ("registry root no longer exists: %s (:Argot gc)"):format(stale.root)
   end
   local desc = project.resolve(opts and opts.startpath)
   if desc.relink then
     problems = problems + 1
-    lines[#lines + 1] = ("this repo matches a glossary registered at %s (:Gloss relink)"):format(
+    lines[#lines + 1] = ("this repo matches a glossary registered at %s (:Argot relink)"):format(
       desc.relink.old_root
     )
   end
@@ -124,14 +124,14 @@ function M.run()
     row = math.max(0, math.floor((vim.o.lines - height) / 2 - 1)),
     col = math.max(0, math.floor((vim.o.columns - width) / 2)),
     border = "rounded",
-    title = " gloss doctor ",
+    title = " argot doctor ",
     title_pos = "center",
   })
   vim.keymap.set("n", "q", function()
     if vim.api.nvim_win_is_valid(win) then
       vim.api.nvim_win_close(win, false)
     end
-  end, { buffer = buf, desc = "gloss: close" })
+  end, { buffer = buf, desc = "argot: close" })
   return buf, win
 end
 

@@ -3,10 +3,10 @@
 
 local eq = MiniTest.expect.equality
 
-local config = require("gloss.config")
-local defbuf = require("gloss.defbuf")
-local jsonl = require("gloss.store.jsonl")
-local project = require("gloss.project")
+local config = require("argot.config")
+local defbuf = require("argot.defbuf")
+local jsonl = require("argot.store.jsonl")
+local project = require("argot.project")
 
 local has_sqlite = pcall(require, "sqlite.db")
 
@@ -51,7 +51,7 @@ T["BLOCKER 1 (sqlite): term precedence over foreign alias in get and delete"] = 
   if not has_sqlite then
     MiniTest.skip("sqlite.lua not available")
   end
-  local s = require("gloss.store.sqlite").open(vim.fs.joinpath(tmpdir, "b1.db"))
+  local s = require("argot.store.sqlite").open(vim.fs.joinpath(tmpdir, "b1.db"))
   s:upsert({ term = "HTTP", aliases = { "http2" }, definition = "old" })
   s:upsert({ term = "http2", definition = "new" })
   eq(s:get("http2").definition, "new")
@@ -81,14 +81,14 @@ T["BLOCKER 2: renaming while keeping the old name as an alias keeps the save"] =
   eq(s:get("BAR").definition, "renamed")
   eq(s:get("BAR").aliases, { "FOO" })
   -- the old term is gone as a term but still resolves through the alias
-  eq(select(2, require("gloss.store").match(s:list(), "FOO", { terms_only = true })), nil)
+  eq(select(2, require("argot.store").match(s:list(), "FOO", { terms_only = true })), nil)
   eq(s:get("FOO").term, "BAR")
 end
 
 T["hostile jsonl fields are sanitized instead of crashing the store"] = function()
   local path = vim.fs.joinpath(tmpdir, "hostile.jsonl")
   vim.fn.writefile({
-    '{"gloss":1}',
+    '{"argot":1}',
     '{"term":"STR","aliases":"notalist","tags":42}',
     '{"term":"NUL","expansion":null,"definition":null,"source":null}',
   }, path)
@@ -101,7 +101,7 @@ T["hostile jsonl fields are sanitized instead of crashing the store"] = function
   eq(nul.definition, "")
   -- the fields that crashed defbuf/search/hover/links now serialize fine
   eq(type(table.concat(defbuf.serialize(nul), "\n")), "string")
-  eq(require("gloss.links").extract(nul.definition), {})
+  eq(require("argot.links").extract(nul.definition), {})
 end
 
 T["a corrupt registry refuses writes instead of resetting to empty"] = function()
@@ -113,7 +113,7 @@ T["a corrupt registry refuses writes instead of resetting to empty"] = function(
 end
 
 T["a line range without any prior visual selection falls back to cword"] = function()
-  local lookup = require("gloss.lookup")
+  local lookup = require("argot.lookup")
   local ok, word = pcall(lookup.word, { range = true })
   eq(ok, true)
   eq(type(word), "string")

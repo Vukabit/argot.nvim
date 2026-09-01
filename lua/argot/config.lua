@@ -10,7 +10,7 @@ local LIST_OPTIONS = { "resolve", "on_miss" }
 local defaults = {
   -- directory name whose presence at the project root switches the project
   -- into in-repo (JSONL) mode
-  project_dir = ".gloss",
+  project_dir = ".argot",
   -- lookup resolution chain, then the fallback chain on a miss
   resolve = { "project", "global" },
   on_miss = { "prompt" },
@@ -24,7 +24,7 @@ local defaults = {
     short_acronym_len = 3,
   },
   ai = {
-    -- a GlossProvider table; nil disables the AI miss handler entirely
+    -- a ArgotProvider table; nil disables the AI miss handler entirely
     provider = nil,
     -- how much codebase context the request bundle carries
     context = {
@@ -35,12 +35,12 @@ local defaults = {
   highlight = {
     -- opt-in: mark known terms in normal buffers with extmarks
     enabled = false,
-    hl_group = "GlossTerm",
+    hl_group = "ArgotTerm",
     -- buffers longer than this are skipped
     max_lines = 2000,
   },
   -- override where global.db, the registry, and project DBs live
-  -- (default: stdpath("data")/gloss)
+  -- (default: stdpath("data")/argot)
   data_dir = nil,
 }
 
@@ -69,7 +69,20 @@ end
 
 ---@return string
 function M.data_dir()
-  return M.options.data_dir or vim.fs.joinpath(vim.fn.stdpath("data") --[[@as string]], "gloss")
+  if M.options.data_dir then
+    return M.options.data_dir
+  end
+  local dir = vim.fs.joinpath(vim.fn.stdpath("data") --[[@as string]], "argot")
+  if not vim.uv.fs_stat(dir) then
+    -- one-time migration from the pre-rename location (the plugin
+    -- launched as gloss.nvim); registry contents are path-keyed, so a
+    -- directory rename carries everything
+    local legacy = vim.fs.joinpath(vim.fn.stdpath("data") --[[@as string]], "gloss")
+    if vim.uv.fs_stat(legacy) then
+      vim.uv.fs_rename(legacy, dir)
+    end
+  end
+  return dir
 end
 
 return M

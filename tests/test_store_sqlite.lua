@@ -22,7 +22,7 @@ local T = MiniTest.new_set({
 })
 
 local function open()
-  return require("gloss.store.sqlite").open(vim.fs.joinpath(tmpdir, "test.db"))
+  return require("argot.store.sqlite").open(vim.fs.joinpath(tmpdir, "test.db"))
 end
 
 T["upsert/get/list/delete roundtrip"] = function()

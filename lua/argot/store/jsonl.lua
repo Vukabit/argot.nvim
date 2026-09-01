@@ -1,10 +1,10 @@
---- JSONL adapter: the git-friendly backend used for in-repo (`.gloss/`)
+--- JSONL adapter: the git-friendly backend used for in-repo (`.argot/`)
 --- glossaries. One entry per line, sorted by term; the first line is a
 --- version header. Writes are atomic (tmp file + rename) and reload before
 --- merging, so concurrent editors lose nothing but a simultaneous edit of
 --- the same term.
 
-local store = require("gloss.store")
+local store = require("argot.store")
 
 local M = {}
 
@@ -22,7 +22,7 @@ for _, key in ipairs(FIELD_ORDER) do
   KNOWN[key] = true
 end
 
----@param entry GlossEntry
+---@param entry ArgotEntry
 ---@return string
 local function encode_entry(entry)
   local parts = {}
@@ -81,8 +81,11 @@ function Store:_load()
     if line ~= "" then
       local ok, obj = pcall(vim.json.decode, line)
       local valid = ok and type(obj) == "table"
-      if valid and obj.gloss ~= nil then
-        self.version = obj.gloss
+      if valid and (obj.argot ~= nil or obj.gloss ~= nil) then
+        -- obj.gloss is the pre-rename header (the plugin launched as
+        -- gloss.nvim); files carrying it load fine and get the argot
+        -- header on their next write
+        self.version = obj.argot or obj.gloss
       elseif valid and type(obj.term) == "string" then
         obj = store.sanitize(obj)
         if store.match(self.entries, obj.term, { terms_only = true }) then
@@ -153,12 +156,12 @@ function Store:_write()
     end
     return a.term < b.term
   end)
-  local lines = { vim.json.encode({ gloss = M.VERSION }) }
+  local lines = { vim.json.encode({ argot = M.VERSION }) }
   for _, entry in ipairs(self.entries) do
     lines[#lines + 1] = encode_entry(entry)
   end
   -- damaged lines (bad merges, hand edits) are preserved verbatim rather
-  -- than silently dropped; `:Gloss doctor` reports them
+  -- than silently dropped; `:Argot doctor` reports them
   for _, bad in ipairs(self.bad_lines) do
     lines[#lines + 1] = bad.line
   end
@@ -170,12 +173,12 @@ function Store:_write()
   -- other's in-flight write
   local tmp = ("%s.%d.tmp"):format(self.path, vim.uv.os_getpid())
   if vim.fn.writefile(lines, tmp) ~= 0 then
-    error(("gloss: failed writing %s"):format(tmp))
+    error(("argot: failed writing %s"):format(tmp))
   end
   local ok, err = vim.uv.fs_rename(tmp, self.path)
   if not ok then
     vim.uv.fs_unlink(tmp)
-    error(("gloss: failed replacing %s: %s"):format(self.path, err or "unknown error"))
+    error(("argot: failed replacing %s: %s"):format(self.path, err or "unknown error"))
   end
   self.stamp = self:_stamp()
 end

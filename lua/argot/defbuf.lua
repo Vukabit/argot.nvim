@@ -2,10 +2,10 @@
 --- so editing a definition uses every motion and plugin the user owns.
 --- :w persists through BufWriteCmd; add and edit are one code path.
 ---
---- Round-trip format (:h gloss-buffer): a `key: value` header block (term,
+--- Round-trip format (:h argot-buffer): a `key: value` header block (term,
 --- expansion, aliases, tags), one blank line, then the markdown definition.
 
-local events = require("gloss.events")
+local events = require("argot.events")
 
 local M = {}
 
@@ -94,7 +94,7 @@ function M.open(entry, ctx)
   if safe ~= raw then
     safe = safe .. "-" .. vim.fn.sha256(raw):sub(1, 6)
   end
-  local name = ("gloss://%s/%s"):format(ctx.scope or "unsaved", safe)
+  local name = ("argot://%s/%s"):format(ctx.scope or "unsaved", safe)
 
   local buf = by_name[name]
   local reuse = buf and vim.api.nvim_buf_is_loaded(buf) and contexts[buf]
@@ -141,29 +141,29 @@ function M.open(entry, ctx)
     row = math.max(0, math.floor((vim.o.lines - height) / 2 - 1)),
     col = math.max(0, math.floor((vim.o.columns - width) / 2)),
     border = "rounded",
-    title = (" gloss: %s "):format(term ~= "" and term or "new entry"),
+    title = (" argot: %s "):format(term ~= "" and term or "new entry"),
     title_pos = "center",
   })
   vim.wo[win].wrap = true
 
   vim.keymap.set("n", "q", function()
     if vim.bo[buf].modified then
-      vim.notify("gloss: unsaved changes (:w to save, :bd! to discard)", vim.log.levels.WARN)
+      vim.notify("argot: unsaved changes (:w to save, :bd! to discard)", vim.log.levels.WARN)
       return
     end
     if vim.api.nvim_win_is_valid(win) then
       vim.api.nvim_win_close(win, false)
     end
-  end, { buffer = buf, desc = "gloss: close" })
+  end, { buffer = buf, desc = "argot: close" })
 
   -- [[link]] support: follow, complete, and see them
-  vim.bo[buf].omnifunc = "v:lua.require'gloss.links'.omnifunc"
-  vim.api.nvim_set_hl(0, "GlossLink", { default = true, underline = true })
-  vim.fn.matchadd("GlossLink", "\\[\\[[^][]\\{-}]]")
+  vim.bo[buf].omnifunc = "v:lua.require'argot.links'.omnifunc"
+  vim.api.nvim_set_hl(0, "ArgotLink", { default = true, underline = true })
+  vim.fn.matchadd("ArgotLink", "\\[\\[[^][]\\{-}]]")
   for _, lhs in ipairs({ "gd", "<CR>" }) do
     vim.keymap.set("n", lhs, function()
       M._follow(buf, win)
-    end, { buffer = buf, desc = "gloss: follow link" })
+    end, { buffer = buf, desc = "argot: follow link" })
   end
 
   -- land the cursor somewhere useful: the empty term, or the body
@@ -182,22 +182,22 @@ end
 ---@param win integer
 ---@return boolean handled true when the cursor was on a link
 function M._follow(buf, win)
-  local target = require("gloss.links").at_cursor()
+  local target = require("argot.links").at_cursor()
   if not target then
     return false
   end
   if vim.bo[buf].modified then
-    vim.notify("gloss: save (:w) or discard (:bd!) before following a link", vim.log.levels.WARN)
+    vim.notify("argot: save (:w) or discard (:bd!) before following a link", vim.log.levels.WARN)
     return true
   end
-  local entry, handle, scope = require("gloss.lookup").find(target)
+  local entry, handle, scope = require("argot.lookup").find(target)
   if vim.api.nvim_win_is_valid(win) then
     vim.api.nvim_win_close(win, false)
   end
   if entry then
     M.open(entry, { store = handle, scope = scope })
   else
-    vim.notify(("gloss: %q is not defined yet"):format(target), vim.log.levels.INFO)
+    vim.notify(("argot: %q is not defined yet"):format(target), vim.log.levels.INFO)
     M.open({ term = target, definition = "" }, {})
   end
   return true
@@ -208,7 +208,7 @@ end
 ---@param scope "project"|"global"
 ---@return table? store, string? err
 function M._scope_store(scope)
-  local project = require("gloss.project")
+  local project = require("argot.project")
   if scope == "global" then
     local s = project.global_store()
     if not s then
@@ -239,7 +239,7 @@ function M._save(buf)
   end
   local parsed, err = M.parse(vim.api.nvim_buf_get_lines(buf, 0, -1, false))
   if not parsed then
-    vim.notify("gloss: " .. err, vim.log.levels.ERROR)
+    vim.notify("argot: " .. err, vim.log.levels.ERROR)
     return
   end
   -- history carries through edits; an AI proposal accepted verbatim stays
@@ -263,7 +263,7 @@ function M._save(buf)
     end
     local handle, serr = M._scope_store(choice)
     if not handle then
-      vim.notify("gloss: " .. (serr or ("no " .. choice .. " store available")), vim.log.levels.ERROR)
+      vim.notify("argot: " .. (serr or ("no " .. choice .. " store available")), vim.log.levels.ERROR)
       return
     end
     ctx.store, ctx.scope = handle, choice
@@ -272,12 +272,12 @@ function M._save(buf)
 end
 
 function M._persist(buf, ctx, parsed)
-  -- the store handle may have been retired under us (:Gloss init -p, gc);
+  -- the store handle may have been retired under us (:Argot init -p, gc);
   -- surface that instead of erroring out of BufWriteCmd and losing the edit
   local ok, saved = pcall(ctx.store.upsert, ctx.store, parsed)
   if not ok then
     vim.notify(
-      "gloss: could not save (the store may have been retired; reopen the entry): " .. tostring(saved),
+      "argot: could not save (the store may have been retired; reopen the entry): " .. tostring(saved),
       vim.log.levels.ERROR
     )
     return
@@ -292,8 +292,8 @@ function M._persist(buf, ctx, parsed)
   if vim.api.nvim_buf_is_loaded(buf) then
     vim.bo[buf].modified = false
   end
-  events.emit(added and "GlossEntryAdded" or "GlossEntryChanged", { term = saved.term, scope = ctx.scope })
-  vim.notify(("gloss: saved %q to the %s store"):format(saved.term, ctx.scope or "current"))
+  events.emit(added and "ArgotEntryAdded" or "ArgotEntryChanged", { term = saved.term, scope = ctx.scope })
+  vim.notify(("argot: saved %q to the %s store"):format(saved.term, ctx.scope or "current"))
 end
 
 return M

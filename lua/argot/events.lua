@@ -1,8 +1,8 @@
 --- User autocmd events. Everything that mutates state announces it here so
 --- UIs (and user config) can react without core knowing about them:
----   GlossEntryAdded / GlossEntryChanged / GlossEntryRemoved
+---   ArgotEntryAdded / ArgotEntryChanged / ArgotEntryRemoved
 ---     data = { term, scope }
----   GlossStoreChanged
+---   ArgotStoreChanged
 ---     data = {} (a store was created, migrated, or replaced wholesale)
 
 local M = {}

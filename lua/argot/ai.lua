@@ -5,12 +5,12 @@
 ---      usages, README head), so every provider benefits equally.
 ---   3. Nothing is auto-saved: proposals open in the review buffer marked
 ---      source = "ai", and sending code context anywhere is inert until
----      `:Gloss ai on` in that project (consent is per-user local state,
+---      `:Argot ai on` in that project (consent is per-user local state,
 ---      never read from the repo).
 --- A provider that is unsure may answer with `questions` instead of a
---- definition; gloss relays them to the user and re-asks once.
+--- definition; argot relays them to the user and re-asks once.
 
-local config = require("gloss.config")
+local config = require("argot.config")
 
 local M = {}
 
@@ -26,14 +26,14 @@ end
 ---@param root string canonical project root (project.detect)
 ---@return boolean
 function M.consent(root)
-  local data = require("gloss.util").read_json(consent_path())
+  local data = require("argot.util").read_json(consent_path())
   return type(data) == "table" and type(data.projects) == "table" and data.projects[root] == true
 end
 
 ---@param root string
 ---@param on boolean
 function M.set_consent(root, on)
-  local util = require("gloss.util")
+  local util = require("argot.util")
   local data = util.read_json(consent_path()) or { version = 1, projects = {} }
   data.projects = type(data.projects) == "table" and data.projects or {}
   data.projects[root] = on and true or nil
@@ -46,7 +46,7 @@ end
 ---@return table request
 function M.build_request(word, opts)
   opts = opts or {}
-  local project = require("gloss.project")
+  local project = require("argot.project")
   local root = (project.detect(opts.startpath))
   local ctx = config.options.ai.context or {}
   local req = { term = word, root = root }
@@ -114,12 +114,12 @@ function M.propose_for(word, opts)
       opts.startpath = vim.fs.dirname(vim.fs.normalize(bufname))
     end
   end
-  local root = (require("gloss.project").detect(opts.startpath))
+  local root = (require("argot.project").detect(opts.startpath))
   if not M.consent(root) then
     if not warned_consent then
       warned_consent = true
       vim.notify(
-        "gloss: an AI provider is configured but not enabled here; run :Gloss ai on",
+        "argot: an AI provider is configured but not enabled here; run :Argot ai on",
         vim.log.levels.INFO
       )
     end
@@ -130,7 +130,7 @@ function M.propose_for(word, opts)
 end
 
 function M._ask(provider, req, round)
-  vim.notify(("gloss: asking %s about %q..."):format(provider.name or "the AI provider", req.term))
+  vim.notify(("argot: asking %s about %q..."):format(provider.name or "the AI provider", req.term))
   local ok, err = pcall(
     provider.propose,
     req,
@@ -139,7 +139,7 @@ function M._ask(provider, req, round)
     end)
   )
   if not ok then
-    vim.notify("gloss: provider error: " .. tostring(err), vim.log.levels.ERROR)
+    vim.notify("argot: provider error: " .. tostring(err), vim.log.levels.ERROR)
   end
 end
 
@@ -165,8 +165,8 @@ function M._handle(provider, req, round, res)
     return
   end
   if not definition then
-    vim.notify("gloss: the provider returned no usable proposal; opening a blank entry", vim.log.levels.WARN)
-    require("gloss.lookup").add(req.term)
+    vim.notify("argot: the provider returned no usable proposal; opening a blank entry", vim.log.levels.WARN)
+    require("argot.lookup").add(req.term)
     return
   end
 
@@ -182,12 +182,12 @@ function M._handle(provider, req, round, res)
   local name = provider.name or "AI"
   if type(res.confidence) == "number" then
     vim.notify(
-      ("gloss: proposal from %s (confidence %.2f); review and :w to keep"):format(name, res.confidence)
+      ("argot: proposal from %s (confidence %.2f); review and :w to keep"):format(name, res.confidence)
     )
   else
-    vim.notify(("gloss: proposal from %s; review and :w to keep"):format(name))
+    vim.notify(("argot: proposal from %s; review and :w to keep"):format(name))
   end
-  require("gloss.defbuf").open(entry, {})
+  require("argot.defbuf").open(entry, {})
 end
 
 function M._interview(provider, req, questions)
@@ -200,10 +200,10 @@ function M._interview(provider, req, questions)
       return
     end
     vim.ui.input(
-      { prompt = ("gloss [%s]: %s "):format(provider.name or "AI", questions[i]) },
+      { prompt = ("argot [%s]: %s "):format(provider.name or "AI", questions[i]) },
       function(answer)
         if answer == nil then
-          vim.notify("gloss: cancelled", vim.log.levels.INFO)
+          vim.notify("argot: cancelled", vim.log.levels.INFO)
           return
         end
         answers[#answers + 1] = { question = questions[i], answer = answer }

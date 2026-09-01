@@ -1,4 +1,4 @@
---- The telescope picker behind :Telescope gloss. A thin skin over the
+--- The telescope picker behind :Telescope argot. A thin skin over the
 --- search engine: same items, same origin labels, live fuzzy filtering,
 --- and direct mappings for the cross-store actions.
 
@@ -8,7 +8,7 @@ local M = {}
 ---@param query string?
 ---@return table[]
 function M.entries(query)
-  local search = require("gloss.search")
+  local search = require("argot.search")
   local items = search.filter(search.collect(), query or "")
   return vim.tbl_map(function(item)
     return {
@@ -33,11 +33,11 @@ function M.picker(opts)
   local conf = require("telescope.config").values
   local actions = require("telescope.actions")
   local action_state = require("telescope.actions.state")
-  local search = require("gloss.search")
+  local search = require("argot.search")
 
   pickers
     .new(opts, {
-      prompt_title = "gloss",
+      prompt_title = "argot",
       finder = finders.new_table({
         results = M.entries(opts.query),
         entry_maker = function(entry)
@@ -56,7 +56,7 @@ function M.picker(opts)
           end
         end
         actions.select_default:replace(with_selected(function(item)
-          require("gloss.defbuf").open(item.entry, { store = item.store, scope = item.label })
+          require("argot.defbuf").open(item.entry, { store = item.store, scope = item.label })
         end))
         map(
           { "i", "n" },

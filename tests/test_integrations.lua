@@ -1,10 +1,10 @@
 local eq = MiniTest.expect.equality
 
-local config = require("gloss.config")
-local highlights = require("gloss.highlights")
-local jsonl = require("gloss.store.jsonl")
-local project = require("gloss.project")
-local statusline = require("gloss.statusline")
+local config = require("argot.config")
+local highlights = require("argot.highlights")
+local jsonl = require("argot.store.jsonl")
+local project = require("argot.project")
+local statusline = require("argot.statusline")
 
 local tmpdir, old_cwd
 
@@ -41,17 +41,17 @@ end
 
 T["statusline shows the project count and tracks events"] = function()
   local _, store = make_project({ { term = "DLQ", definition = "d" } })
-  eq(statusline.component(), "gloss:1")
+  eq(statusline.component(), "argot:1")
   -- cached until an event invalidates
   store:upsert({ term = "API", definition = "d" })
-  eq(statusline.component(), "gloss:1")
-  require("gloss.events").emit("GlossEntryAdded", { term = "API", scope = "project" })
-  eq(statusline.component(), "gloss:2")
+  eq(statusline.component(), "argot:1")
+  require("argot.events").emit("ArgotEntryAdded", { term = "API", scope = "project" })
+  eq(statusline.component(), "argot:2")
 end
 
 T["statusline is empty without a project glossary"] = function()
   vim.cmd.cd(tmpdir)
-  require("gloss.events").emit("GlossStoreChanged", {})
+  require("argot.events").emit("ArgotStoreChanged", {})
   eq(statusline.component(), "")
 end
 
@@ -98,22 +98,22 @@ T["telescope entries carry display, ordinal, and the item"] = function()
   make_project({
     { term = "DLQ", expansion = "dead letter queue", tags = { "aws" }, definition = "d" },
   })
-  local entries = require("gloss.telescope").entries("")
+  local entries = require("argot.telescope").entries("")
   eq(#entries, 1)
   eq(entries[1].value.entry.term, "DLQ")
   eq(entries[1].display:find("dead letter queue") ~= nil, true)
   eq(entries[1].ordinal:find("#aws") ~= nil, true)
   eq(entries[1].ordinal:find("proj") ~= nil, true)
   -- the query pre-filter uses the search grammar
-  eq(#require("gloss.telescope").entries("#nope"), 0)
+  eq(#require("argot.telescope").entries("#nope"), 0)
 end
 
 T["the telescope extension registers"] = function()
   if not pcall(require, "telescope") then
     MiniTest.skip("telescope.nvim not available")
   end
-  require("telescope").load_extension("gloss")
-  eq(type(require("telescope").extensions.gloss.gloss), "function")
+  require("telescope").load_extension("argot")
+  eq(type(require("telescope").extensions.argot.argot), "function")
 end
 
 return T

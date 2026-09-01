@@ -1,7 +1,7 @@
 local eq = MiniTest.expect.equality
 
-local defbuf = require("gloss.defbuf")
-local jsonl = require("gloss.store.jsonl")
+local defbuf = require("argot.defbuf")
+local jsonl = require("argot.store.jsonl")
 
 local tmpdir
 

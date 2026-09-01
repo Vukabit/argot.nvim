@@ -1,14 +1,14 @@
---- Opt-in extmark highlighting of known terms, so glossed words are subtly
+--- Opt-in extmark highlighting of known terms, so defined words are subtly
 --- visible while reading. Honors the same case policy as lookup (a stored
 --- "IT" never lights up the word "it"), refreshes on quiet moments rather
 --- than per keystroke, and skips huge buffers.
 
-local config = require("gloss.config")
+local config = require("argot.config")
 
 local M = {}
 
-local ns = vim.api.nvim_create_namespace("gloss_highlight")
-local enabled = nil -- nil = follow config; :Gloss highlight overrides
+local ns = vim.api.nvim_create_namespace("argot_highlight")
+local enabled = nil -- nil = follow config; :Argot highlight overrides
 local attached = false
 local timers = {}
 
@@ -22,8 +22,8 @@ end
 
 -- (word, ci) pairs for every term and alias reachable from this project
 local function words()
-  local project = require("gloss.project")
-  local lookup = require("gloss.lookup")
+  local project = require("argot.project")
+  local lookup = require("argot.lookup")
   local out, seen = {}, {}
   for _, scope in ipairs(config.options.resolve) do
     local ok, handle = pcall(project.scope_store, scope)
@@ -87,7 +87,7 @@ function M.refresh(buf)
         if not is_word_char(before) and (after == "" or not is_word_char(after)) then
           vim.api.nvim_buf_set_extmark(buf, ns, lnum - 1, first - 1, {
             end_col = last,
-            hl_group = cfg.hl_group or "GlossTerm",
+            hl_group = cfg.hl_group or "ArgotTerm",
           })
         end
       end
@@ -128,8 +128,8 @@ function M.attach()
     return
   end
   attached = true
-  vim.api.nvim_set_hl(0, "GlossTerm", { default = true, underline = true })
-  local group = vim.api.nvim_create_augroup("GlossHighlight", {})
+  vim.api.nvim_set_hl(0, "ArgotTerm", { default = true, underline = true })
+  local group = vim.api.nvim_create_augroup("ArgotHighlight", {})
   vim.api.nvim_create_autocmd({ "BufWinEnter", "BufWritePost", "InsertLeave" }, {
     group = group,
     callback = function(args)
@@ -144,7 +144,7 @@ function M.attach()
   })
   vim.api.nvim_create_autocmd("User", {
     group = group,
-    pattern = { "GlossEntryAdded", "GlossEntryChanged", "GlossEntryRemoved", "GlossStoreChanged" },
+    pattern = { "ArgotEntryAdded", "ArgotEntryChanged", "ArgotEntryRemoved", "ArgotStoreChanged" },
     callback = function()
       M.refresh()
     end,

@@ -2,7 +2,7 @@
 --- default backend for the global dictionary and out-of-repo project stores.
 --- WAL mode keeps concurrent nvim instances safe.
 
-local store = require("gloss.store")
+local store = require("argot.store")
 
 local M = {}
 
@@ -35,7 +35,7 @@ end
 function M.open(path)
   local ok, sqlite = pcall(require, "sqlite.db")
   if not ok then
-    error("gloss: the sqlite backend requires kkharji/sqlite.lua and libsqlite3")
+    error("argot: the sqlite backend requires kkharji/sqlite.lua and libsqlite3")
   end
   if path ~= ":memory:" then
     local dir = vim.fs.dirname(path)

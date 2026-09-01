@@ -1,4 +1,4 @@
---- Cross-store search: one engine over every store gloss knows about (the
+--- Cross-store search: one engine over every store argot knows about (the
 --- current project, the global dictionary, every registered project).
 --- Adapters only provide list(); fuzzy matching is vim.fn.matchfuzzy over a
 --- term/aliases/expansion/tags haystack, `#tag` tokens filter exactly, and
@@ -6,12 +6,12 @@
 --- noise). The UI is two-stage vim.ui.select chains, so it works on bare
 --- Neovim and inherits any picker plugin the user runs.
 
-local events = require("gloss.events")
+local events = require("argot.events")
 
 local M = {}
 
----@class GlossSearchItem
----@field entry GlossEntry
+---@class ArgotSearchItem
+---@field entry ArgotEntry
 ---@field store table
 ---@field label string display name of the owning store
 ---@field scope "project"|"global"|"other"
@@ -21,7 +21,7 @@ local M = {}
 ---@return {label: string, scope: string, store: table, key: string}[]
 function M.sources(opts)
   opts = opts or {}
-  local project = require("gloss.project")
+  local project = require("argot.project")
   local sources, seen_keys, seen_labels = {}, {}, {}
 
   local function add(label, scope, handle, key)
@@ -65,7 +65,7 @@ function M.sources(opts)
 end
 
 ---@param opts? {startpath?: string}
----@return GlossSearchItem[]
+---@return ArgotSearchItem[]
 function M.collect(opts)
   local items = {}
   for _, src in ipairs(M.sources(opts)) do
@@ -93,9 +93,9 @@ end
 
 --- Pure filter: tag tokens are exact (case-insensitive), the rest fuzzy over
 --- term/aliases/expansion/tags, then definition substring hits appended.
----@param items GlossSearchItem[]
+---@param items ArgotSearchItem[]
 ---@param query string?
----@return GlossSearchItem[]
+---@return ArgotSearchItem[]
 function M.filter(items, query)
   local q = M.parse_query(query)
   if #q.tags > 0 then
@@ -141,7 +141,7 @@ function M.filter(items, query)
   return out
 end
 
----@param item GlossSearchItem
+---@param item ArgotSearchItem
 ---@return string
 function M.format_item(item)
   local entry = item.entry
@@ -157,7 +157,7 @@ function M.format_item(item)
 end
 
 --- Copy an entry into another store.
----@param entry GlossEntry
+---@param entry ArgotEntry
 ---@param dst table destination store
 ---@param opts? {on_collision?: "overwrite"|"keep_both"|"cancel"}
 ---@return boolean done
@@ -176,7 +176,7 @@ function M.copy(entry, dst, opts)
   return true
 end
 
----@param entry GlossEntry
+---@param entry ArgotEntry
 ---@param src table source store
 ---@param dst table destination store
 ---@param opts? {on_collision?: "overwrite"|"keep_both"|"cancel"}
@@ -189,19 +189,19 @@ function M.move(entry, src, dst, opts)
   return true
 end
 
---- :Gloss search entry point.
+--- :Argot search entry point.
 ---@param query string?
 function M.run(query)
   query = query or ""
   local items = M.filter(M.collect(), query)
   if #items == 0 then
     vim.notify(
-      "gloss: nothing matches" .. (query ~= "" and (" " .. vim.inspect(query)) or ""),
+      "argot: nothing matches" .. (query ~= "" and (" " .. vim.inspect(query)) or ""),
       vim.log.levels.INFO
     )
     return
   end
-  local prompt = query ~= "" and ("gloss search [%s]"):format(query) or "gloss search"
+  local prompt = query ~= "" and ("argot search [%s]"):format(query) or "argot search"
   vim.ui.select(items, { prompt = prompt, format_item = M.format_item }, function(item)
     if item then
       M.actions(item)
@@ -211,11 +211,11 @@ end
 
 local ACTIONS = { "edit", "copy to...", "move to...", "delete", "reveal origin" }
 
----@param item GlossSearchItem
+---@param item ArgotSearchItem
 function M.actions(item)
   vim.ui.select(ACTIONS, { prompt = item.entry.term .. " [" .. item.label .. "]" }, function(choice)
     if choice == "edit" then
-      require("gloss.defbuf").open(item.entry, { store = item.store, scope = item.label })
+      require("argot.defbuf").open(item.entry, { store = item.store, scope = item.label })
     elseif choice == "copy to..." then
       M._pick_destination(item, false)
     elseif choice == "move to..." then
@@ -224,22 +224,22 @@ function M.actions(item)
       M.delete_item(item)
     elseif choice == "reveal origin" then
       vim.notify(
-        ("gloss: %q lives in [%s] at %s"):format(item.entry.term, item.label, item.store.path or "?")
+        ("argot: %q lives in [%s] at %s"):format(item.entry.term, item.label, item.store.path or "?")
       )
     end
   end)
 end
 
 --- Confirm-and-delete one item; shared by the actions menu and telescope.
----@param item GlossSearchItem
+---@param item ArgotSearchItem
 ---@return boolean deleted
 function M.delete_item(item)
   if vim.fn.confirm(("Delete %q from [%s]?"):format(item.entry.term, item.label), "&Yes\n&No", 2) ~= 1 then
     return false
   end
   item.store:delete(item.entry.term)
-  events.emit("GlossEntryRemoved", { term = item.entry.term, scope = item.label })
-  vim.notify(("gloss: deleted %q from [%s]"):format(item.entry.term, item.label))
+  events.emit("ArgotEntryRemoved", { term = item.entry.term, scope = item.label })
+  vim.notify(("argot: deleted %q from [%s]"):format(item.entry.term, item.label))
   return true
 end
 
@@ -248,7 +248,7 @@ function M._pick_destination(item, is_move)
     return src.store ~= item.store
   end, M.sources())
   if #dests == 0 then
-    vim.notify("gloss: no other store to send this to", vim.log.levels.WARN)
+    vim.notify("argot: no other store to send this to", vim.log.levels.WARN)
     return
   end
   local verb = is_move and "Move" or "Copy"
@@ -283,12 +283,12 @@ function M._pick_destination(item, is_move)
       done = M.copy(item.entry, dest.store, opts)
     end
     if done then
-      events.emit("GlossEntryAdded", { term = item.entry.term, scope = dest.label })
+      events.emit("ArgotEntryAdded", { term = item.entry.term, scope = dest.label })
       if is_move then
-        events.emit("GlossEntryRemoved", { term = item.entry.term, scope = item.label })
+        events.emit("ArgotEntryRemoved", { term = item.entry.term, scope = item.label })
       end
       vim.notify(
-        ("gloss: %s %q to [%s]"):format(is_move and "moved" or "copied", item.entry.term, dest.label)
+        ("argot: %s %q to [%s]"):format(is_move and "moved" or "copied", item.entry.term, dest.label)
       )
     end
   end)
@@ -306,9 +306,9 @@ end
 
 --- What the current context defines, resolve-chain deduplicated: a project
 --- entry shadows a global entry with the same term, exactly like lookup;
---- the shadowed copy stays reachable through :Gloss search.
+--- the shadowed copy stays reachable through :Argot search.
 ---@param opts? {startpath?: string}
----@return GlossSearchItem[]
+---@return ArgotSearchItem[]
 function M.context_items(opts)
   local items, seen = {}, {}
   -- local_sources orders project before global, so first-seen wins
@@ -323,41 +323,41 @@ function M.context_items(opts)
   return items
 end
 
---- :Gloss list: everything defined in the current context (project store
+--- :Argot list: everything defined in the current context (project store
 --- plus the global dictionary), optionally tag-filtered.
 ---@param query string?
 function M.list(query)
   local items = M.context_items()
   if #items == 0 then
-    vim.notify("gloss: no glossary here yet (:Gloss add, or :Gloss init)", vim.log.levels.INFO)
+    vim.notify("argot: no glossary here yet (:Argot add, or :Argot init)", vim.log.levels.INFO)
     return
   end
   items = M.filter(items, query)
   if #items == 0 then
     vim.notify(
-      "gloss: no entries" .. ((query and query ~= "") and (" matching " .. query) or ""),
+      "argot: no entries" .. ((query and query ~= "") and (" matching " .. query) or ""),
       vim.log.levels.INFO
     )
     return
   end
-  vim.ui.select(items, { prompt = "gloss list", format_item = M.format_item }, function(item)
+  vim.ui.select(items, { prompt = "argot list", format_item = M.format_item }, function(item)
     if item then
-      require("gloss.defbuf").open(item.entry, { store = item.store, scope = item.label })
+      require("argot.defbuf").open(item.entry, { store = item.store, scope = item.label })
     end
   end)
 end
 
---- :Gloss projects: browse every project glossary from anywhere.
+--- :Argot projects: browse every project glossary from anywhere.
 function M.projects()
   local sources = vim.tbl_filter(function(src)
     return src.scope ~= "global"
   end, M.sources())
   if #sources == 0 then
-    vim.notify("gloss: no project glossaries known yet", vim.log.levels.INFO)
+    vim.notify("argot: no project glossaries known yet", vim.log.levels.INFO)
     return
   end
   vim.ui.select(sources, {
-    prompt = "gloss projects",
+    prompt = "argot projects",
     format_item = function(src)
       return ("%s (%d entries)"):format(src.label, #src.store:list())
     end,
@@ -370,10 +370,10 @@ function M.projects()
       items[#items + 1] = { entry = entry, store = src.store, label = src.label, scope = src.scope }
     end
     if #items == 0 then
-      vim.notify(("gloss: [%s] is empty"):format(src.label), vim.log.levels.INFO)
+      vim.notify(("argot: [%s] is empty"):format(src.label), vim.log.levels.INFO)
       return
     end
-    vim.ui.select(items, { prompt = "gloss: " .. src.label, format_item = M.format_item }, function(item)
+    vim.ui.select(items, { prompt = "argot: " .. src.label, format_item = M.format_item }, function(item)
       if item then
         M.actions(item)
       end
@@ -381,7 +381,7 @@ function M.projects()
   end)
 end
 
---- Distinct tags for command completion: "local" covers what :Gloss list
+--- Distinct tags for command completion: "local" covers what :Argot list
 --- shows (project + global), "all" covers every store like search.
 ---@param scope "all"|"local"
 ---@return string[]

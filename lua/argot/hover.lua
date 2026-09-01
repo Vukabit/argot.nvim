@@ -1,7 +1,7 @@
---- hover.nvim integration: gloss as a pluggable hover provider, so the
---- K-style crowd gets definitions without any gloss keymap. Modern
+--- hover.nvim integration: argot as a pluggable hover provider, so the
+--- K-style crowd gets definitions without any argot keymap. Modern
 --- hover.nvim loads providers as modules; users list
---- "gloss.providers.hover" in hover's config. register() covers older
+--- "argot.providers.hover" in hover's config. register() covers older
 --- hover.nvim versions that still expose a register function.
 
 local M = {}
@@ -32,7 +32,7 @@ function M.word_at(line, col)
 end
 
 ---@param opt? {bufnr?: integer, pos?: integer[]}
----@return GlossEntry?
+---@return ArgotEntry?
 function M._entry_at(opt)
   local word
   if type(opt) == "table" and opt.pos and opt.bufnr and vim.api.nvim_buf_is_valid(opt.bufnr) then
@@ -51,10 +51,10 @@ function M._entry_at(opt)
     return nil
   end
   -- never prompt (relink etc.) from inside a hover query
-  return (require("gloss.lookup").find(word, { interactive = false }))
+  return (require("argot.lookup").find(word, { interactive = false }))
 end
 
----@param entry GlossEntry
+---@param entry ArgotEntry
 ---@return string[]
 function M._render(entry)
   local title = entry.term
@@ -74,7 +74,7 @@ end
 --- execute(params, done) per hover.nvim's contract.
 function M.provider()
   return {
-    name = "Gloss",
+    name = "Argot",
     priority = 150,
     enabled = function(bufnr, opts)
       return M._entry_at({ bufnr = bufnr, pos = type(opts) == "table" and opts.pos or nil }) ~= nil
@@ -96,7 +96,7 @@ end
 
 --- Legacy path only: older hover.nvim versions exposed register().
 --- Modern versions load providers as modules instead (see the module
---- comment in gloss/providers/hover.lua).
+--- comment in argot/providers/hover.lua).
 ---@return boolean registered
 function M.register()
   local ok, hover = pcall(require, "hover")

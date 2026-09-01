@@ -1,9 +1,9 @@
 local eq = MiniTest.expect.equality
 
-local config = require("gloss.config")
-local jsonl = require("gloss.store.jsonl")
-local project = require("gloss.project")
-local search = require("gloss.search")
+local config = require("argot.config")
+local jsonl = require("argot.store.jsonl")
+local project = require("argot.project")
+local search = require("argot.search")
 
 local has_sqlite = pcall(require, "sqlite.db")
 
@@ -148,7 +148,7 @@ T["local_sources covers the lookup context: project and global, never other proj
   eq(by_term.LOCAL.entry.definition, "d")
   eq(by_term.EVERYWHERE.scope, "global")
   eq(by_term.FOREIGN, nil)
-  -- a global tag completes for :Gloss list (needs the cwd, so build the
+  -- a global tag completes for :Argot list (needs the cwd, so build the
   -- items the same way list does, from local_sources)
   local tags = {}
   for _, src in ipairs(search.local_sources({ startpath = a })) do

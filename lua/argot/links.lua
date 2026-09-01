@@ -2,7 +2,7 @@
 --- reference each other. Follow with gd (or <CR>) in the definition buffer;
 --- a link to an undefined term offers to create it, so glossaries can be
 --- written links-first. Complete link targets with CTRL-X CTRL-O after
---- typing "[[". `:Gloss doctor` reports dangling links.
+--- typing "[[". `:Argot doctor` reports dangling links.
 
 local M = {}
 
@@ -40,9 +40,9 @@ function M.at_cursor()
 end
 
 local function term_candidates()
-  local project = require("gloss.project")
+  local project = require("argot.project")
   local out, seen = {}, {}
-  for _, scope in ipairs(require("gloss.config").options.resolve) do
+  for _, scope in ipairs(require("argot.config").options.resolve) do
     local ok, handle = pcall(project.scope_store, scope)
     if ok and handle then
       local ok2, entries = pcall(handle.list, handle)

@@ -5,12 +5,12 @@
 --- exact root path, then normalized git remote (catches moves and re-clones,
 --- relink is confirmed by the caller). Git worktrees resolve to the main
 --- worktree via --git-common-dir, so all worktrees share one glossary.
---- Presence of the project_dir marker (default `.gloss/`) switches the
+--- Presence of the project_dir marker (default `.argot/`) switches the
 --- project into in-repo JSONL mode and bypasses the registry entirely.
 
-local config = require("gloss.config")
-local store = require("gloss.store")
-local util = require("gloss.util")
+local config = require("argot.config")
+local store = require("argot.store")
+local util = require("argot.util")
 
 local M = {}
 
@@ -129,7 +129,7 @@ function M.load_registry()
   if invalid then
     -- refuse to treat a corrupt registry as empty: the next save would
     -- silently wipe every project mapping
-    error(("gloss: %s is unreadable; fix or remove it before continuing"):format(M.data_paths().registry))
+    error(("argot: %s is unreadable; fix or remove it before continuing"):format(M.data_paths().registry))
   end
   if type(reg) ~= "table" or type(reg.projects) ~= "table" then
     reg = { version = 1, projects = {} }
@@ -220,7 +220,7 @@ end
 --- Point a registry entry at a new root (repo moved or re-cloned).
 function M.relink(id, new_root)
   local reg = M.load_registry()
-  local entry = assert(reg.projects[id], "gloss: unknown project id")
+  local entry = assert(reg.projects[id], "argot: unknown project id")
   entry.root = new_root
   entry.remote = M.remote(new_root) or entry.remote
   M.save_registry(reg)
@@ -232,7 +232,7 @@ end
 function M.register(startpath)
   local root, mode = M.detect(startpath)
   if mode == "in_repo" then
-    error("gloss: project is in in-repo mode; there is nothing to register")
+    error("argot: project is in in-repo mode; there is nothing to register")
   end
   local reg = M.load_registry()
   local remote_url = M.remote(root)
@@ -259,7 +259,7 @@ function M.store_for(desc)
   if not exit_hooked then
     exit_hooked = true
     vim.api.nvim_create_autocmd("VimLeavePre", {
-      group = vim.api.nvim_create_augroup("GlossProjectStores", {}),
+      group = vim.api.nvim_create_augroup("ArgotProjectStores", {}),
       callback = function()
         M.close_handles()
       end,
@@ -274,7 +274,7 @@ end
 
 ---@return table? store
 function M.global_store()
-  if not require("gloss.store.sqlite").available() then
+  if not require("argot.store.sqlite").available() then
     return nil
   end
   return M.store_for({ backend = "sqlite", path = M.data_paths().global_db })
@@ -291,7 +291,7 @@ function M.project_store(opts)
     if not opts.interactive then
       return nil, desc
     end
-    local msg = ("gloss: found an existing glossary for this repo (previously at %s). Relink it?"):format(
+    local msg = ("argot: found an existing glossary for this repo (previously at %s). Relink it?"):format(
       desc.relink.old_root
     )
     if vim.fn.confirm(msg, "&Yes\n&No", 1) ~= 1 then
@@ -325,7 +325,7 @@ end
 local function ensure_jsonl_file(path)
   if vim.fn.filereadable(path) ~= 1 then
     vim.fn.mkdir(vim.fs.dirname(path), "p")
-    vim.fn.writefile({ ('{"gloss":%d}'):format(require("gloss.store.jsonl").VERSION) }, path)
+    vim.fn.writefile({ ('{"argot":%d}'):format(require("argot.store.jsonl").VERSION) }, path)
   end
 end
 
@@ -362,7 +362,7 @@ function M.init_in_repo(startpath, opts)
     if not copied then
       M.drop_handles()
       error(
-        ("gloss: backing up the old store failed (%s); it was NOT deleted"):format(
+        ("argot: backing up the old store failed (%s); it was NOT deleted"):format(
           copy_err or "unknown error"
         )
       )
@@ -425,7 +425,7 @@ function M.gc(ids)
             vim.uv.fs_unlink(db .. suffix)
           end
         else
-          vim.notify(("gloss: backup of %s failed; entry kept"):format(id), vim.log.levels.ERROR)
+          vim.notify(("argot: backup of %s failed; entry kept"):format(id), vim.log.levels.ERROR)
         end
       end
       if safe then
@@ -454,7 +454,7 @@ function M.reset_global()
   local ok, err = vim.uv.fs_rename(paths.global_db, backup)
   if not ok then
     error(
-      ("gloss: could not move the global DB aside (%s); nothing was deleted"):format(err or "unknown error")
+      ("argot: could not move the global DB aside (%s); nothing was deleted"):format(err or "unknown error")
     )
   end
   for _, suffix in ipairs({ "-wal", "-shm" }) do
@@ -464,7 +464,7 @@ function M.reset_global()
   return { existed = true, backup = backup }
 end
 
---- The nuclear option: move ALL gloss data (global DB, every project DB,
+--- The nuclear option: move ALL argot data (global DB, every project DB,
 --- the registry, AI consent) into a timestamped folder under backups/.
 --- Nothing is deleted; in-repo glossaries are repo files and are untouched.
 --- Caller confirms (hard).
@@ -495,12 +495,12 @@ function M.ensure_project_store(startpath)
     return handle, desc
   end
   if desc.relink then
-    error("gloss: a relink is pending for this repo; run :Gloss relink first")
+    error("argot: a relink is pending for this repo; run :Argot relink first")
   end
   M.register(startpath)
   handle, desc = M.project_store({ startpath = startpath })
   if not handle then
-    error("gloss: could not open the project store (is sqlite.lua installed?)")
+    error("argot: could not open the project store (is sqlite.lua installed?)")
   end
   return handle, desc
 end
@@ -512,7 +512,7 @@ end
 function M.export_jsonl(path, startpath)
   local handle = M.project_store({ startpath = startpath })
   if not handle then
-    error("gloss: this project has no glossary to export")
+    error("argot: this project has no glossary to export")
   end
   local entries = handle:list()
   vim.uv.fs_unlink(path)
@@ -531,7 +531,7 @@ end
 ---@return integer imported, integer damaged skipped lines in the source
 function M.import_jsonl(path, startpath)
   if vim.fn.filereadable(path) ~= 1 then
-    error("gloss: cannot read " .. path)
+    error("argot: cannot read " .. path)
   end
   local src = store.open("jsonl", path)
   local entries = src:list()
@@ -549,7 +549,7 @@ end
 function M.deinit(startpath)
   local root, mode = M.detect(startpath)
   if mode ~= "in_repo" then
-    error("gloss: project is not in in-repo mode")
+    error("argot: project is not in in-repo mode")
   end
   local dir = vim.fs.joinpath(root, config.options.project_dir)
   local entries = store.open("jsonl", vim.fs.joinpath(dir, "glossary.jsonl")):list()

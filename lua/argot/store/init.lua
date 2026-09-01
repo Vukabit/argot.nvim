@@ -15,7 +15,7 @@
 
 local M = {}
 
----@class GlossEntry
+---@class ArgotEntry
 ---@field term string canonical form
 ---@field expansion? string acronym expansion
 ---@field definition string markdown body
@@ -26,8 +26,8 @@ local M = {}
 ---@field updated_at string ISO 8601 UTC
 
 local BACKENDS = {
-  jsonl = "gloss.store.jsonl",
-  sqlite = "gloss.store.sqlite",
+  jsonl = "argot.store.jsonl",
+  sqlite = "argot.store.sqlite",
 }
 
 ---@param backend "jsonl"|"sqlite"
@@ -35,7 +35,7 @@ local BACKENDS = {
 function M.open(backend, path)
   local mod = BACKENDS[backend]
   if not mod then
-    error(("gloss: unknown storage backend %q"):format(backend))
+    error(("argot: unknown storage backend %q"):format(backend))
   end
   return require(mod).open(path)
 end
@@ -48,10 +48,10 @@ end
 --- Fill defaults on a partial entry. Provided values win so imports and
 --- migrations keep their history.
 ---@param entry table
----@return GlossEntry
+---@return ArgotEntry
 function M.normalize(entry)
   if type(entry) ~= "table" or type(entry.term) ~= "string" or entry.term == "" then
-    error("gloss: an entry requires a non-empty term")
+    error("argot: an entry requires a non-empty term")
   end
   local e = vim.deepcopy(entry)
   e.definition = e.definition or ""
@@ -67,11 +67,11 @@ end
 --- an entry's own term always beats another entry's alias, and identity
 --- operations (upsert, rename cleanup) pass terms_only so an alias can
 --- never masquerade as an entry's key.
----@param entries GlossEntry[]
+---@param entries ArgotEntry[]
 ---@param term string
 ---@param opts? {ci?: boolean, terms_only?: boolean}
 ---@return integer? index
----@return GlossEntry? entry
+---@return ArgotEntry? entry
 function M.match(entries, term, opts)
   local ci = opts and opts.ci
   local needle = ci and term:lower() or term

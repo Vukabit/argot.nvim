@@ -1,21 +1,21 @@
---- :checkhealth gloss
+--- :checkhealth argot
 
 local M = {}
 
 function M.check()
   local health = vim.health
-  health.start("gloss.nvim")
+  health.start("argot.nvim")
 
   if vim.fn.has("nvim-0.11") == 1 then
     health.ok("Neovim >= 0.11")
   else
-    health.error("gloss.nvim requires Neovim 0.11+")
+    health.error("argot.nvim requires Neovim 0.11+")
   end
 
   local has_sqlite = pcall(require, "sqlite.db")
   if has_sqlite then
     local opened, err = pcall(function()
-      local db = require("gloss.store.sqlite").open(":memory:")
+      local db = require("argot.store.sqlite").open(":memory:")
       db:close()
     end)
     if opened then
@@ -36,7 +36,7 @@ function M.check()
     health.warn("ripgrep not found: AI providers will receive less codebase context")
   end
 
-  local data_dir = require("gloss.config").data_dir()
+  local data_dir = require("argot.config").data_dir()
   vim.fn.mkdir(data_dir, "p")
   if vim.fn.filewritable(data_dir) == 2 then
     health.ok("data directory is writable: " .. data_dir)
@@ -45,7 +45,7 @@ function M.check()
   end
 
   health.start("current project")
-  local project = require("gloss.project")
+  local project = require("argot.project")
   local ok, desc = pcall(project.resolve)
   if not ok then
     health.warn("could not resolve the project: " .. tostring(desc))
@@ -55,30 +55,30 @@ function M.check()
     health.ok(("registered out-of-repo project, store at %s"):format(desc.path))
   elseif desc.relink then
     health.warn(
-      ("registry knows this repo under another path (%s); run :Gloss init or a lookup to relink"):format(
+      ("registry knows this repo under another path (%s); run :Argot init or a lookup to relink"):format(
         desc.relink.old_root
       )
     )
   else
     health.info(
-      "project not registered yet (saving an entry to the project scope registers it, or run :Gloss init)"
+      "project not registered yet (saving an entry to the project scope registers it, or run :Argot init)"
     )
   end
 
-  local provider = require("gloss.config").options.ai.provider
+  local provider = require("argot.config").options.ai.provider
   if provider then
-    local consented = ok and desc and require("gloss.ai").consent(desc.root)
+    local consented = ok and desc and require("argot.ai").consent(desc.root)
     health.ok(
       ("AI provider configured: %s (consent here: %s)"):format(
         provider.name or "unnamed",
-        consented and "on" or "off; run :Gloss ai on"
+        consented and "on" or "off; run :Argot ai on"
       )
     )
   else
-    health.info("no AI provider configured (optional; see :h gloss-ai)")
+    health.info("no AI provider configured (optional; see :h argot-ai)")
   end
 
-  local skipped = require("gloss.keymaps").skipped
+  local skipped = require("argot.keymaps").skipped
   if #skipped == 0 then
     health.ok("no keymap conflicts")
   else

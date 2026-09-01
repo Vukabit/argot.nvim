@@ -1,6 +1,6 @@
 local eq = MiniTest.expect.equality
 
-local lookup = require("gloss.lookup")
+local lookup = require("argot.lookup")
 
 local T = MiniTest.new_set()
 

@@ -2,9 +2,9 @@
 --- store chain -> definition buffer on a hit, miss-handler chain otherwise.
 --- Case policy lives here, above the storage layer.
 
-local config = require("gloss.config")
-local defbuf = require("gloss.defbuf")
-local store = require("gloss.store")
+local config = require("argot.config")
+local defbuf = require("argot.defbuf")
+local store = require("argot.store")
 
 local M = {}
 
@@ -29,10 +29,10 @@ end
 -- exposed for the highlighter, which must honor the same policy
 M.ci_allowed = ci_allowed
 
----@param entries GlossEntry[]
+---@param entries ArgotEntry[]
 ---@param word string
 ---@param case_cfg? table
----@return GlossEntry?
+---@return ArgotEntry?
 function M.policy_match(entries, word, case_cfg)
   local _, exact = store.match(entries, word)
   if exact then
@@ -59,7 +59,7 @@ end
 function M.word(opts)
   if opts and opts.range then
     -- only use the visual marks when a visual selection has actually been
-    -- made this session; a bare :1,3Gloss has no region to read
+    -- made this session; a bare :1,3Argot has no region to read
     local vmode = vim.fn.visualmode()
     if vmode ~= "" and vim.fn.getpos("'<")[2] > 0 then
       local ok, lines = pcall(vim.fn.getregion, vim.fn.getpos("'<"), vim.fn.getpos("'>"), { type = vmode })
@@ -81,9 +81,9 @@ end
 --- Walk the resolve chain for a word.
 ---@param word string
 ---@param opts? {interactive?: boolean} false suppresses relink prompts
----@return GlossEntry? entry, table? store, string? scope
+---@return ArgotEntry? entry, table? store, string? scope
 function M.find(word, opts)
-  local project = require("gloss.project")
+  local project = require("argot.project")
   local interactive = not (opts and opts.interactive == false)
   for _, scope in ipairs(config.options.resolve) do
     local handle = project.scope_store(scope, { interactive = interactive and scope == "project" })
@@ -101,7 +101,7 @@ end
 function M.run(word, opts)
   word = word and vim.trim(word) or M.word(opts)
   if word == "" then
-    vim.notify("gloss: nothing to look up", vim.log.levels.WARN)
+    vim.notify("argot: nothing to look up", vim.log.levels.WARN)
     return
   end
   local entry, handle, scope = M.find(word)
@@ -114,12 +114,12 @@ function M.run(word, opts)
     elseif handler == "ai" then
       -- falls through to the next handler when no provider is configured
       -- or this project has not consented
-      if require("gloss.ai").propose_for(word) then
+      if require("argot.ai").propose_for(word) then
         return
       end
     end
   end
-  vim.notify(("gloss: no definition for %q"):format(word), vim.log.levels.INFO)
+  vim.notify(("argot: no definition for %q"):format(word), vim.log.levels.INFO)
 end
 
 ---@param term string?
@@ -130,12 +130,12 @@ end
 ---@param term string?
 function M.edit(term)
   if not term or term == "" then
-    vim.notify("gloss: :Gloss edit needs a term", vim.log.levels.ERROR)
+    vim.notify("argot: :Argot edit needs a term", vim.log.levels.ERROR)
     return
   end
   local entry, handle, scope = M.find(term)
   if not entry then
-    vim.notify(("gloss: no entry %q (try :Gloss add %s)"):format(term, term), vim.log.levels.WARN)
+    vim.notify(("argot: no entry %q (try :Argot add %s)"):format(term, term), vim.log.levels.WARN)
     return
   end
   return defbuf.open(entry, { store = handle, scope = scope })
@@ -144,20 +144,20 @@ end
 ---@param term string?
 function M.delete(term)
   if not term or term == "" then
-    vim.notify("gloss: :Gloss delete needs a term", vim.log.levels.ERROR)
+    vim.notify("argot: :Argot delete needs a term", vim.log.levels.ERROR)
     return
   end
   local entry, handle, scope = M.find(term)
   if not entry then
-    vim.notify(("gloss: no entry %q"):format(term), vim.log.levels.WARN)
+    vim.notify(("argot: no entry %q"):format(term), vim.log.levels.WARN)
     return
   end
   if vim.fn.confirm(("Delete %q from the %s store?"):format(entry.term, scope), "&Yes\n&No", 2) ~= 1 then
     return
   end
   handle:delete(entry.term)
-  require("gloss.events").emit("GlossEntryRemoved", { term = entry.term, scope = scope })
-  vim.notify(("gloss: deleted %q"):format(entry.term))
+  require("argot.events").emit("ArgotEntryRemoved", { term = entry.term, scope = scope })
+  vim.notify(("argot: deleted %q"):format(entry.term))
 end
 
 return M

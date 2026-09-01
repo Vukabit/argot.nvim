@@ -1,6 +1,6 @@
 local eq = MiniTest.expect.equality
 
-local jsonl = require("gloss.store.jsonl")
+local jsonl = require("argot.store.jsonl")
 
 local tmpdir
 
@@ -49,7 +49,7 @@ T["file has a version header and sorted, term-first lines"] = function()
   s:upsert({ term = "zebra", definition = "z" })
   s:upsert({ term = "Alpha", definition = "a" })
   local lines = vim.fn.readfile(path())
-  eq(lines[1], '{"gloss":1}')
+  eq(lines[1], '{"argot":1}')
   eq(vim.startswith(lines[2], '{"term":"Alpha"'), true)
   eq(vim.startswith(lines[3], '{"term":"zebra"'), true)
   eq(#lines, 3)
@@ -80,9 +80,19 @@ T["delete removes by term or alias and reports"] = function()
   eq(s:list(), {})
 end
 
+T["pre-rename gloss headers load fine and upgrade on write"] = function()
+  vim.fn.writefile({ '{"gloss":1}', '{"term":"API","definition":"d"}' }, path())
+  local s = jsonl.open(path())
+  eq(s.version, 1)
+  eq(#s.bad_lines, 0)
+  eq(s:get("API").definition, "d")
+  s:upsert({ term = "DLQ", definition = "d" })
+  eq(vim.fn.readfile(path())[1], '{"argot":1}')
+end
+
 T["damaged lines are tolerated on load and preserved on write"] = function()
   vim.fn.writefile({
-    '{"gloss":1}',
+    '{"argot":1}',
     '{"term":"API","definition":"good"}',
     "{{{ definitely not json",
   }, path())
@@ -98,7 +108,7 @@ end
 
 T["duplicate terms (e.g. from a union merge) are surfaced"] = function()
   vim.fn.writefile({
-    '{"gloss":1}',
+    '{"argot":1}',
     '{"term":"DLQ","definition":"a"}',
     '{"term":"DLQ","definition":"b"}',
   }, path())
@@ -111,7 +121,7 @@ T["external file changes are picked up on next access"] = function()
   local s = jsonl.open(path())
   s:upsert({ term = "API", definition = "mine" })
   -- simulate a teammate's git pull rewriting the file
-  vim.fn.writefile({ '{"gloss":1}', '{"term":"API","definition":"theirs"}' }, path())
+  vim.fn.writefile({ '{"argot":1}', '{"term":"API","definition":"theirs"}' }, path())
   eq(s:get("API").definition, "theirs")
 end
 

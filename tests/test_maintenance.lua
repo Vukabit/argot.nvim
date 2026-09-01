@@ -1,9 +1,9 @@
 local eq = MiniTest.expect.equality
 
-local config = require("gloss.config")
-local doctor = require("gloss.doctor")
-local jsonl = require("gloss.store.jsonl")
-local project = require("gloss.project")
+local config = require("argot.config")
+local doctor = require("argot.doctor")
+local jsonl = require("argot.store.jsonl")
+local project = require("argot.project")
 
 local has_sqlite = pcall(require, "sqlite.db")
 
@@ -47,7 +47,7 @@ T["doctor reports damage, duplicates, cross-store terms, and stale roots"] = fun
   vim.fn.mkdir(root, "p")
   local res = project.init_in_repo(root)
   vim.fn.writefile({
-    '{"gloss":1}',
+    '{"argot":1}',
     '{"term":"DLQ","definition":"a"}',
     '{"term":"DLQ","definition":"b"}',
     "{{{ merge wreckage",
@@ -115,7 +115,7 @@ T["reset_all archives everything except backups, leaving a clean slate"] = funct
   vim.fn.mkdir(root, "p")
   project.store_for(project.register(root)):upsert({ term = "A", definition = "d" })
   project.global_store():upsert({ term = "G", definition = "d" })
-  require("gloss.ai").set_consent(root, true)
+  require("argot.ai").set_consent(root, true)
 
   local res = project.reset_all()
   eq(res.moved >= 3, true) -- projects.json, projects/, global.db, consent
@@ -124,7 +124,7 @@ T["reset_all archives everything except backups, leaving a clean slate"] = funct
   -- clean slate: unregistered project, empty registry, consent gone
   eq(project.resolve(root).mode, "unregistered")
   eq(vim.tbl_isempty(project.load_registry().projects), true)
-  eq(require("gloss.ai").consent(root), false)
+  eq(require("argot.ai").consent(root), false)
 end
 
 T["export and import round-trip a project glossary"] = function()
@@ -135,7 +135,7 @@ T["export and import round-trip a project glossary"] = function()
 
   local out = vim.fs.joinpath(tmpdir, "snapshot.jsonl")
   eq(project.export_jsonl(out, root), 1)
-  eq(vim.fn.readfile(out)[1], '{"gloss":1}')
+  eq(vim.fn.readfile(out)[1], '{"argot":1}')
 
   local other = vim.fs.joinpath(tmpdir, "imp")
   vim.fn.mkdir(other, "p")
@@ -153,7 +153,7 @@ T["import skips damaged lines but reports them"] = function()
   vim.fn.mkdir(target, "p")
   project.init_in_repo(target)
   local src = vim.fs.joinpath(tmpdir, "wonky.jsonl")
-  vim.fn.writefile({ '{"gloss":1}', '{"term":"API","definition":"d"}', "not json at all" }, src)
+  vim.fn.writefile({ '{"argot":1}', '{"term":"API","definition":"d"}', "not json at all" }, src)
 
   local imported, damaged = project.import_jsonl(src, target)
   eq(imported, 1)
@@ -167,7 +167,7 @@ T["export overwrites to an exact snapshot"] = function()
   jsonl.open(res.path):upsert({ term = "A", definition = "d" })
 
   local out = vim.fs.joinpath(tmpdir, "out.jsonl")
-  vim.fn.writefile({ '{"gloss":1}', '{"term":"STALE","definition":"old"}' }, out)
+  vim.fn.writefile({ '{"argot":1}', '{"term":"STALE","definition":"old"}' }, out)
   project.export_jsonl(out, root)
   local snapshot = jsonl.open(out)
   eq(snapshot:get("STALE"), nil)

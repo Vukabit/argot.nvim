@@ -1,9 +1,9 @@
 --- The opt-in curated keymap set. <Plug> mappings (defined in
---- plugin/gloss.lua) are the stable contract; this module only installs the
+--- plugin/argot.lua) are the stable contract; this module only installs the
 --- convenience layer, never clobbers an existing mapping, and remembers what
 --- it skipped so :checkhealth can report it.
 
-local config = require("gloss.config")
+local config = require("argot.config")
 
 local M = {}
 
@@ -11,11 +11,11 @@ local M = {}
 M.skipped = {}
 
 local ACTIONS = {
-  lookup = { plug = "<Plug>(GlossLookup)", suffix = "g", modes = { "n", "x" } },
-  add = { plug = "<Plug>(GlossAdd)", suffix = "a", modes = { "n" } },
-  search = { plug = "<Plug>(GlossSearch)", suffix = "s", modes = { "n" } },
-  list = { plug = "<Plug>(GlossList)", suffix = "l", modes = { "n" } },
-  projects = { plug = "<Plug>(GlossProjects)", suffix = "p", modes = { "n" } },
+  lookup = { plug = "<Plug>(ArgotLookup)", suffix = "g", modes = { "n", "x" } },
+  add = { plug = "<Plug>(ArgotAdd)", suffix = "a", modes = { "n" } },
+  search = { plug = "<Plug>(ArgotSearch)", suffix = "s", modes = { "n" } },
+  list = { plug = "<Plug>(ArgotList)", suffix = "l", modes = { "n" } },
+  projects = { plug = "<Plug>(ArgotProjects)", suffix = "p", modes = { "n" } },
 }
 
 local function existing_map(lhs, mode)
@@ -45,17 +45,17 @@ function M.install()
       for _, mode in ipairs(action.modes) do
         local current = existing_map(lhs, mode)
         -- reinstalling over our own mapping is fine; anything else is skipped
-        if current and not (current.rhs or ""):find("(Gloss", 1, true) then
+        if current and not (current.rhs or ""):find("(Argot", 1, true) then
           M.skipped[#M.skipped + 1] = { lhs = lhs, mode = mode, action = name }
         else
-          vim.keymap.set(mode, lhs, action.plug, { desc = "gloss: " .. name })
+          vim.keymap.set(mode, lhs, action.plug, { desc = "argot: " .. name })
         end
       end
     end
   end
   for _, skip in ipairs(M.skipped) do
     vim.notify(
-      ("gloss: keymap %s (%s) not installed, already mapped; see :checkhealth gloss"):format(
+      ("argot: keymap %s (%s) not installed, already mapped; see :checkhealth argot"):format(
         skip.lhs,
         skip.action
       ),
@@ -64,7 +64,7 @@ function M.install()
   end
   pcall(function()
     -- selene: allow(mixed_table) -- which-key's spec format is mixed by design
-    require("which-key").add({ { prefix, group = "gloss" } })
+    require("which-key").add({ { prefix, group = "argot" } })
   end)
 end
 
