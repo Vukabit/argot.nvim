@@ -1,7 +1,7 @@
-# gloss.nvim design decisions
+# argot.nvim design decisions
 
 This file records *why* things are the way they are, ADR-style. The *how* lives
-in `:h gloss`; the quickstart lives in the README. If a section here starts
+in `:h argot`; the quickstart lives in the README. If a section here starts
 explaining usage, it is leaking into the manual's job and should be cut.
 
 ## What this is
@@ -9,15 +9,20 @@ explaining usage, it is leaking into the manual's job and should be cut.
 A per-project glossary for the jargon and acronyms a codebase actually uses.
 Look up the word under the cursor, get a definition in an editable float, add
 one when it is missing, optionally let a pluggable AI provider propose one from
-codebase context. Named after the medieval *gloss*: a marginal note explaining
-a difficult word.
+codebase context. Named after *argot* (French; the t is silent): the
+insider vocabulary of a group, originally the semi-private cant of the
+Parisian underworld, later any in-group's working language. Every codebase
+grows one; this plugin decodes it. (The project launched as gloss.nvim,
+after the medieval marginal note; it was renamed at 0.1.1 because four
+unrelated repos already carried that name, while argot was untouched in
+the editor ecosystem and names the problem rather than the mechanism.)
 
 ## Storage: two adapters behind one interface
 
 - **SQLite** (kkharji/sqlite.lua) for the global dictionary and out-of-repo
   project stores. Honest justification: WAL mode makes concurrent nvim
   instances safe, which JSON files handle badly.
-- **JSONL only for in-repo mode** (`.gloss/glossary.jsonl`). A binary DB in
+- **JSONL only for in-repo mode** (`.argot/glossary.jsonl`). A binary DB in
   git is all cost: no diffs, no review, unmergeable. JSONL lines are sorted by
   term and serialized with a fixed key order, so identical data produces
   identical bytes and a one-entry change is a one-line diff. First line is a
@@ -30,7 +35,7 @@ a difficult word.
   automatically identical in capability.
 - JSONL writes are atomic (tmp + rename) and reload-before-merge. Damaged
   lines are skipped on load, preserved verbatim on write, and reported by
-  `:Gloss doctor`; the loader never destroys what it cannot parse.
+  `:Argot doctor`; the loader never destroys what it cannot parse.
 
 ## Project identity: registry, not path hash
 
@@ -40,13 +45,13 @@ and a registry (`projects.json` in the data dir) maps identities to them.
 Lookup order: exact root path, then normalized git remote URL (catches moves
 and re-clones, with a confirm prompt before relinking). Git worktrees resolve
 identity via `git rev-parse --git-common-dir`, so all worktrees of a repo
-share one glossary. `:Gloss gc` only ever deletes after explicit confirmation.
+share one glossary. `:Argot gc` only ever deletes after explicit confirmation.
 
 ## Nothing from the repo is ever executed
 
-Entries are data; project config is `.gloss/config.json`, never Lua. This
+Entries are data; project config is `.argot/config.json`, never Lua. This
 removes the entire exrc-style trust problem (no `vim.secure.read`, no
-prompts, no attack surface). Do not add a Lua config file to `.gloss/` later;
+prompts, no attack surface). Do not add a Lua config file to `.argot/` later;
 that would reintroduce the problem this decision deleted. Send-code-to-AI
 consent is likewise per-user local state, never inherited from a file someone
 else committed.
@@ -70,7 +75,7 @@ for example) drop into the list without touching core.
 - The reference adapter shells out to any CLI (prompt on stdin, JSON on
   stdout), so `claude -p`, `llm`, ollama, or a homegrown script all work with
   zero SDK dependencies.
-- AI is inert until explicitly enabled per project (`:Gloss ai on`).
+- AI is inert until explicitly enabled per project (`:Argot ai on`).
 
 ## Case policy for acronyms
 
@@ -97,11 +102,11 @@ three-layer treatment: `<Plug>` mappings for everything (no defaults ever
 imposed), an opt-in curated set under a configurable prefix with per-action
 override or `false`, and which-key group registration when present. The
 curated installer never clobbers an existing mapping: it skips and reports
-via `:checkhealth gloss`.
+via `:checkhealth argot`.
 
 ## Documentation
 
-`:h gloss` is the manual and the single source of depth; the README is
+`:h argot` is the manual and the single source of depth; the README is
 quickstart only. CI includes a doc-drift check (every subcommand, `<Plug>`
 map, and setup key must have a help tag, and vice versa) so the manual cannot
 silently rot.

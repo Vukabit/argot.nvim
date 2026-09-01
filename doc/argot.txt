@@ -1,90 +1,91 @@
-*gloss.txt*  A per-project glossary for your codebase's jargon and acronyms
+*argot.txt*  A per-project glossary for your codebase's jargon and acronyms
 
 Author:  Shawn Bays
 License: MIT
 
 ==============================================================================
-CONTENTS                                                        *gloss*
+CONTENTS                                                        *argot*
 
-  1. Introduction ............................. |gloss-introduction|
-  2. Quickstart ............................... |gloss-quickstart|
-  3. Commands ................................. |:Gloss|
-  4. Keymaps .................................. |gloss-keymaps|
-  5. The definition buffer .................... |gloss-buffer|
-  6. Configuration ............................ |gloss.setup|
-  7. Storage and the .gloss/ directory ........ |gloss-storage|
-  8. AI providers ............................. |gloss-ai|
-  9. FAQ and troubleshooting .................. |gloss-faq|
+  1. Introduction ............................. |argot-introduction|
+  2. Quickstart ............................... |argot-quickstart|
+  3. Commands ................................. |:Argot|
+  4. Keymaps .................................. |argot-keymaps|
+  5. The definition buffer .................... |argot-buffer|
+  6. Configuration ............................ |argot.setup|
+  7. Storage and the .argot/ directory ........ |argot-storage|
+  8. AI providers ............................. |argot-ai|
+  9. FAQ and troubleshooting .................. |argot-faq|
 
-gloss.nvim 0.1.0
+argot.nvim 0.1.1
 
 ==============================================================================
-1. INTRODUCTION                                 *gloss-introduction*
+1. INTRODUCTION                                 *argot-introduction*
 
-gloss.nvim keeps a dictionary of the terms, acronyms, and jargon a project
-actually uses. Look up the word under the cursor and its definition appears
+Argot (AR-goh; the t is silent) is the insider vocabulary of a group.
+Every codebase has one, and this plugin decodes it: argot.nvim keeps a
+dictionary of the terms, acronyms, and jargon a project actually uses. Look up the word under the cursor and its definition appears
 in a floating window holding a real, editable buffer; if no definition
 exists, you can write one on the spot, store it in the project's glossary or
 your global dictionary, or let a pluggable AI provider propose one from
-codebase context (|gloss-ai|).
+codebase context (|argot-ai|).
 
-A glossary lives outside the repository by default. Running `:Gloss init -p`
-moves it into a `.gloss/` directory as line-based JSON that diffs, merges,
+A glossary lives outside the repository by default. Running `:Argot init -p`
+moves it into a `.argot/` directory as line-based JSON that diffs, merges,
 and reviews like any other committed text, so a cloned repository brings its
 glossary along with zero setup.
 
 ==============================================================================
-2. QUICKSTART                                   *gloss-quickstart*
+2. QUICKSTART                                   *argot-quickstart*
 
 Requirements: Neovim 0.11+. The SQLite backend (global dictionary and
 out-of-repo stores) additionally needs kkharji/sqlite.lua and libsqlite3;
-run |:checkhealth| gloss to verify.
+run |:checkhealth| argot to verify.
 
 Optionally enable the curated keymaps: >lua
 
-  require("gloss").setup({ keymaps = true })
+  require("argot").setup({ keymaps = true })
 <
 Then, in any project:
 
-1. Put the cursor on a term and press `<leader>gg` (or run |:Gloss|). A known
+1. Put the cursor on a term and press `<leader>gg` (or run |:Argot|). A known
    term opens its definition; an unknown one opens a prefilled new-entry
-   buffer (|gloss-buffer|).
+   buffer (|argot-buffer|).
 2. Write the definition below the blank line, `:w`, and pick the project or
    global store. Saving to the project scope registers the project
-   automatically; `:Gloss init` does it explicitly, `:Gloss init -p` puts
+   automatically; `:Argot init` does it explicitly, `:Argot init -p` puts
    the glossary in the repository instead.
 3. `q` closes the float.
 
 ==============================================================================
-3. COMMANDS                                     *:Gloss*
+3. COMMANDS                                     *:Argot*
 
 All functionality is reachable through one command with completed
 subcommands (terms, tags, files, and help topics all complete).
 
-  :Gloss [lookup] [{term}]                      *:Gloss-lookup*
+  :Argot [lookup] [{term}]                      *:Argot-lookup*
       Resolve {term} (default: the word under the cursor, or the visual
       selection for multi-word terms) through the store chain
-      (|gloss.setup.resolve|) and open its definition. On a miss, the
-      |gloss.setup.on_miss| chain runs; the default opens a new-entry
+      (|argot.setup.resolve|) and open its definition. On a miss, the
+      |argot.setup.on_miss| chain runs; the default opens a new-entry
       buffer.
 
-  :Gloss add [{term}]                           *:Gloss-add*
+  :Argot add [{term}]                           *:Argot-add*
       Open a new-entry buffer; writing it asks project or global.
 
-  :Gloss edit {term}   :Gloss delete {term}     *:Gloss-edit* *:Gloss-delete*
+  :Argot edit {term}   :Argot delete {term}     *:Argot-edit* *:Argot-delete*
       Direct entry operations, term-completed. Delete confirms first.
 
-  :Gloss list [{query}]                         *:Gloss-list*
+  :Argot list [{query}]                         *:Argot-list*
       Picker over everything defined in the current context: the project's
       entries and the global dictionary, labeled by origin (whatever the
       lookup chain can resolve here belongs in list). Like lookup, a
       project entry shadows a global entry with the same term; the
-      shadowed copy stays reachable through |:Gloss-search|. The optional
+      shadowed copy stays reachable through |:Argot-search|. The optional
       query uses the same grammar as search (`#tag` filters, fuzzy words).
       Selecting an entry opens it for editing. Other projects' glossaries
-      are |:Gloss-search| and |:Gloss-projects| territory.
+      are |:Argot-search| and |:Argot-projects| territory.
 
-  :Gloss search [{query}]                       *:Gloss-search*
+  :Argot search [{query}]                       *:Argot-search*
       Fuzzy search across every store: the current project, the global
       dictionary, and every registered project, each result labeled with
       its origin. `#tag` tokens filter exactly (case-insensitive); other
@@ -98,128 +99,128 @@ subcommands (terms, tags, files, and help topics all complete).
       telescope/fzf-lua/mini.pick installed the bare form is fully
       fuzzy-filterable.
 
-  :Gloss init [-p]                              *:Gloss-init*
+  :Argot init [-p]                              *:Argot-init*
       Register the project. Bare: create its out-of-repo store (also
       happens implicitly on the first save to the project scope). With -p:
       create the in-repo glossary and fold any existing out-of-repo
       entries into it (the old DB is backed up first). Offers the
-      merge=union gitattribute (|gloss-jsonl|). If the registry knows this
+      merge=union gitattribute (|argot-jsonl|). If the registry knows this
       repository under another path (a moved or re-cloned repo), init
       offers to relink instead of creating a second glossary.
 
-  :Gloss deinit                                 *:Gloss-deinit*
+  :Argot deinit                                 *:Argot-deinit*
       Convert an in-repo glossary back to an out-of-repo store. Never
       deletes anything inside the repository; it prints the removal
       command instead.
 
-  :Gloss projects                               *:Gloss-projects*
+  :Argot projects                               *:Argot-projects*
       Browse every known project glossary from anywhere: pick a project,
       pick an entry, act on it (same actions as search). Covers the
       current project and all registered out-of-repo projects; other
       repositories' in-repo glossaries live in those repositories.
 
-  :Gloss relink                                 *:Gloss-relink*
+  :Argot relink                                 *:Argot-relink*
       Re-attach a moved or re-cloned repository to its registry entry.
       With a pending remote-matched candidate this confirms it; otherwise
       it offers the registry list to link the current root to.
 
-  :Gloss gc                                     *:Gloss-gc*
+  :Argot gc                                     *:Argot-gc*
       Clean up registry entries whose roots vanished. Each is confirmed
       individually, and the entry's DB is backed up before the entry is
       retired; nothing is ever deleted automatically.
 
-  :Gloss export [{path}]                        *:Gloss-export*
+  :Argot export [{path}]                        *:Argot-export*
       Snapshot the project glossary as JSONL (default: ./glossary.jsonl).
       Confirms before overwriting an existing file.
 
-  :Gloss import {path}                          *:Gloss-import*
+  :Argot import {path}                          *:Argot-import*
       Fold a JSONL file into the project glossary, registering the
       project if needed. Timestamps are preserved; same-term entries are
       overwritten; damaged source lines are skipped and reported.
 
-  :Gloss help [{topic}]                         *:Gloss-help*
-      Open this manual, jumping to {topic} if given (completes over gloss
+  :Argot help [{topic}]                         *:Argot-help*
+      Open this manual, jumping to {topic} if given (completes over argot
       help tags).
 
-  :Gloss ai on|off|status                       *:Gloss-ai*
+  :Argot ai on|off|status                       *:Argot-ai*
       Per-project consent gate for sending code context to the configured
-      AI provider (|gloss-ai|). Off until explicitly enabled; consent is
+      AI provider (|argot-ai|). Off until explicitly enabled; consent is
       stored per-user in the data directory, never read from the repo.
       `status` reports the provider, this project's consent, and whether
       ripgrep is available for context gathering.
 
-  :Gloss highlight [on|off|toggle]              *:Gloss-highlight*
+  :Argot highlight [on|off|toggle]              *:Argot-highlight*
       Toggle extmark highlighting of known terms in normal buffers for
-      this session (default: toggle). |gloss.setup.highlight| turns it on
+      this session (default: toggle). |argot.setup.highlight| turns it on
       permanently. Highlighting honors the case policy: a stored "IT"
       never lights up the word "it".
 
-  :Gloss reset project|global|all               *:Gloss-reset*
+  :Argot reset project|global|all               *:Argot-reset*
       The clean-slate command, in three sizes. `project` retires the
       current project's out-of-repo glossary; `global` resets the global
-      dictionary; `all` moves every piece of gloss data (global, every
+      dictionary; `all` moves every piece of argot data (global, every
       project DB, the registry, AI consent) into a timestamped folder
       under backups/ and requires typing "wipe" to run. Nothing is ever
       deleted, only archived; delete the backups yourself when sure.
       In-repo glossaries are repository files and are never touched (use
       git).
 
-  :Gloss doctor                                 *:Gloss-doctor*
+  :Argot doctor                                 *:Argot-doctor*
       A read-only report of things silently wrong: damaged glossary lines
       (kept verbatim on writes), duplicate terms within a file (union
       merges), the same term defined in several stores, dangling
-      `[[links]]` (|gloss-links|), stale registry roots, and pending
+      `[[links]]` (|argot-links|), stale registry roots, and pending
       relinks. Every finding names the command that fixes it.
 
 ==============================================================================
-4. KEYMAPS                                      *gloss-keymaps*
+4. KEYMAPS                                      *argot-keymaps*
 
 No mappings are installed by default. Every action has a <Plug> mapping;
 the opt-in curated set installs under a configurable prefix and never
 clobbers an existing mapping (skipped maps are reported once and by
-`:checkhealth gloss`).
+`:checkhealth argot`).
 
-  <Plug>(GlossLookup)    normal and visual mode lookup
-  <Plug>(GlossAdd)       new entry
-  <Plug>(GlossSearch)    cross-store search; opens gloss's telescope
+  <Plug>(ArgotLookup)    normal and visual mode lookup
+  <Plug>(ArgotAdd)       new entry
+  <Plug>(ArgotSearch)    cross-store search; opens argot's telescope
                          picker (live fuzzy bar) when telescope.nvim is
                          installed, the |vim.ui.select| flow otherwise
-  <Plug>(GlossList)      current context's entries
-  <Plug>(GlossProjects)  projects browser
+  <Plug>(ArgotList)      current context's entries
+  <Plug>(ArgotProjects)  projects browser
 
-The curated set (|gloss.setup.keymaps|), default prefix `<leader>g`:
+The curated set (|argot.setup.keymaps|), default prefix `<leader>g`:
 suffix `g` lookup, `a` add, `s` search, `l` list, `p` projects. Each action
 takes its own lhs or `false` in the keymaps table.
 
-K-style hover: gloss ships a lewis6991/hover.nvim provider module, so
-hovering a known term shows its definition with no gloss keymap at all.
+K-style hover: argot ships a lewis6991/hover.nvim provider module, so
+hovering a known term shows its definition with no argot keymap at all.
 List it in hover's own config: >lua
 
   require("hover").config({
-    providers = { "hover.providers.lsp", "gloss.providers.hover" },
+    providers = { "hover.providers.lsp", "argot.providers.hover" },
   })
 <
 (Very old hover.nvim versions with a register() API are handled
 automatically by setup().)
 
 Statusline: a cached component showing the current project's entry count
-("gloss:12", or "" with no glossary): >lua
+("argot:12", or "" with no glossary): >lua
 
   -- lualine
-  sections = { lualine_x = { function() return require("gloss").statusline() end } }
+  sections = { lualine_x = { function() return require("argot").statusline() end } }
 <
-or vanilla: `set statusline+=%{v:lua.require'gloss'.statusline()}`
+or vanilla: `set statusline+=%{v:lua.require'argot'.statusline()}`
 
 Telescope: with nvim-telescope/telescope.nvim installed, >lua
 
-  require("telescope").load_extension("gloss")
+  require("telescope").load_extension("argot")
 <
-enables `:Telescope gloss` over every store with live filtering. Mappings
+enables `:Telescope argot` over every store with live filtering. Mappings
 inside the picker: <CR> edit, CTRL-Y copy to another store, CTRL-O move,
 CTRL-D delete (confirmed).
 
 ==============================================================================
-5. THE DEFINITION BUFFER                        *gloss-buffer*
+5. THE DEFINITION BUFFER                        *argot-buffer*
 
 Definitions open in a floating window holding a real buffer
 ('buftype' = acwrite, 'filetype' = markdown): edit with everything you own,
@@ -238,21 +239,21 @@ All four header keys are always shown; empty values are fine. Editing the
 `term:` line renames the entry on the next write. A new entry asks which
 store to save to (project or global) on its first write.
 
-                                                *gloss-links*
+                                                *argot-links*
 Definitions can reference each other with `[[term]]` links. In the
 definition buffer: `gd` or <CR> on a link follows it (a link to a term
 that is not defined yet opens a prefilled new-entry buffer, so glossaries
 can be written links-first); CTRL-X CTRL-O after typing `[[` completes
 known term names and closes the brackets. Dangling links show up in
-`:Gloss doctor`. Links render underlined (highlight group GlossLink).
+`:Argot doctor`. Links render underlined (highlight group ArgotLink).
 
 ==============================================================================
-6. CONFIGURATION                                *gloss.setup* *gloss-config*
+6. CONFIGURATION                                *argot.setup* *argot-config*
 
 Calling setup() is optional; everything works with defaults. >lua
 
-  require("gloss").setup({
-    project_dir = ".gloss",
+  require("argot").setup({
+    project_dir = ".argot",
     resolve = { "project", "global" },
     on_miss = { "prompt" },
     keymaps = false,
@@ -261,103 +262,103 @@ Calling setup() is optional; everything works with defaults. >lua
     data_dir = nil,
   })
 <
-                                                *gloss.setup.project_dir*
+                                                *argot.setup.project_dir*
 project_dir       Directory name whose presence at the project root selects
-                  in-repo mode. Default: `".gloss"`.
+                  in-repo mode. Default: `".argot"`.
 
-                                                *gloss.setup.resolve*
+                                                *argot.setup.resolve*
 resolve           Ordered store chain for lookups. List-valued options
                   replace the default entirely rather than merging.
                   Default: `{ "project", "global" }`.
 
-                                                *gloss.setup.on_miss*
+                                                *argot.setup.on_miss*
 on_miss           Ordered fallback chain when no store has the term.
                   Default: `{ "prompt" }`.
 
-                                                *gloss.setup.keymaps*
+                                                *argot.setup.keymaps*
 keymaps           `false` (nothing installed), `true` (curated set under
                   `<leader>g`), or a table with `prefix` plus per-action
                   overrides where each action takes a lhs string or `false`.
 
-                                                *gloss.setup.case*
+                                                *argot.setup.case*
 case              `short_acronym_len`: uppercase terms at or under this
                   length match case-sensitively. Default: 3.
 
-                                                *gloss.setup.ai*
-ai                `provider`: a GlossProvider table (|gloss-ai|), or nil to
+                                                *argot.setup.ai*
+ai                `provider`: a ArgotProvider table (|argot-ai|), or nil to
                   disable the AI miss handler. `context`: how much codebase
                   context requests carry (`lines` around the cursor,
                   default 8; `usages` capped ripgrep hits, default 20).
 
-                                                *gloss.setup.highlight*
+                                                *argot.setup.highlight*
 highlight         `enabled`: mark known terms in normal buffers with
-                  extmarks (default false; |:Gloss-highlight| toggles per
+                  extmarks (default false; |:Argot-highlight| toggles per
                   session). `hl_group`: highlight group, default
-                  "GlossTerm" (underline unless you define it).
+                  "ArgotTerm" (underline unless you define it).
                   `max_lines`: buffers longer than this are skipped,
                   default 2000.
 
-                                                *gloss.setup.data_dir*
+                                                *argot.setup.data_dir*
 data_dir          Override where the global dictionary, registry, and
                   out-of-repo project stores live.
-                  Default: `stdpath("data") .. "/gloss"`.
+                  Default: `stdpath("data") .. "/argot"`.
 
 ==============================================================================
-7. STORAGE                                      *gloss-storage* *gloss-jsonl*
+7. STORAGE                                      *argot-storage* *argot-jsonl*
 
 Out-of-repo stores and the global dictionary are SQLite databases under
-|gloss.setup.data_dir|, WAL mode, safe across concurrent Neovim instances.
+|argot.setup.data_dir|, WAL mode, safe across concurrent Neovim instances.
 
-In-repo glossaries are JSONL: `.gloss/glossary.jsonl`, one entry per line,
+In-repo glossaries are JSONL: `.argot/glossary.jsonl`, one entry per line,
 sorted by term, fixed key order, version header on line one. Recommended
 gitattribute: >
 
-  .gloss/glossary.jsonl merge=union
+  .argot/glossary.jsonl merge=union
 <
 Damaged lines (bad merges, hand edits) are skipped on load, preserved
-verbatim on write, and reported by `:Gloss doctor`.
+verbatim on write, and reported by `:Argot doctor`.
 
 ==============================================================================
-8. AI PROVIDERS                                 *gloss-ai* *gloss-provider*
+8. AI PROVIDERS                                 *argot-ai* *argot-provider*
 
-With a provider configured and `:Gloss ai on` run in a project, the "ai"
-miss handler (|gloss.setup.on_miss|) asks the provider to draft a
+With a provider configured and `:Argot ai on` run in a project, the "ai"
+miss handler (|argot.setup.on_miss|) asks the provider to draft a
 definition before falling back to the blank prompt. A provider is a table
 with a `name` and one function: >lua
 
   propose(request, callback)
 <
-`request` carries the term plus context gathered by gloss: up to
+`request` carries the term plus context gathered by argot: up to
 `ai.context.lines` lines around the cursor, up to `ai.context.usages`
 project-wide ripgrep hits of the term, the file path and filetype, and the
 first lines of the README. The callback takes a table with `definition`
 (markdown), and optionally `expansion`, `tags`, `confidence` (0 to 1), or
-`questions`: a list of clarifying questions gloss relays to the user via
+`questions`: a list of clarifying questions argot relays to the user via
 |vim.ui.input| before re-asking once with the answers attached (one round
 trip, then the provider must answer).
 
 Proposals are never saved automatically: they open in the review buffer
-(|gloss-buffer|) marked `source = "ai"`. Accepting verbatim keeps that
+(|argot-buffer|) marked `source = "ai"`. Accepting verbatim keeps that
 mark; editing before `:w` records `ai_edited`.
 
 The bundled CLI adapter makes any command a provider (prompt on stdin,
 JSON on stdout), so `claude -p`, `llm`, ollama, or a homegrown script all
 work with no SDK: >lua
 
-  require("gloss").setup({
+  require("argot").setup({
     ai = {
-      provider = require("gloss.providers.cli").new({
+      provider = require("argot.providers.cli").new({
         cmd = { "claude", "-p" },
         -- name = "claude", timeout = 60000, prompt = custom_fn(req)
       }),
     },
   })
 <
-Nothing runs, and nothing leaves the machine, until `:Gloss ai on` in that
-project. |:Gloss-ai|
+Nothing runs, and nothing leaves the machine, until `:Argot ai on` in that
+project. |:Argot-ai|
 
 ==============================================================================
-9. FAQ                                          *gloss-faq*
+9. FAQ                                          *argot-faq*
 
 Q: Typing "api" over an "API" entry finds nothing. ~
    By design: short all-uppercase acronyms match case-sensitively so the
@@ -366,13 +367,13 @@ Q: Typing "api" over an "API" entry finds nothing. ~
    add a lowercase alias.
 
 Q: How do teammates get the glossary? ~
-   `:Gloss init -p` moves it into the repository as line-based JSON, and
+   `:Argot init -p` moves it into the repository as line-based JSON, and
    accept the offered merge=union gitattribute. From then on `git clone`
-   is the whole setup; see |gloss-storage|.
+   is the whole setup; see |argot-storage|.
 
 Q: I moved or re-cloned a repository and my glossary is gone. ~
    It is not gone; the registry knows the repo by its git remote. The next
-   lookup (or `:Gloss relink`) offers to relink. `:Gloss doctor` shows any
+   lookup (or `:Argot relink`) offers to relink. `:Argot doctor` shows any
    pending relink.
 
 Q: Is sqlite.lua required? ~
@@ -380,9 +381,9 @@ Q: Is sqlite.lua required? ~
    glossaries are plain JSONL and need nothing.
 
 Q: Does the AI feature send my code somewhere? ~
-   Never by default. The "ai" miss handler is inert until `:Gloss ai on`
+   Never by default. The "ai" miss handler is inert until `:Argot ai on`
    in that project, and even then proposals are only drafts in the review
-   buffer until you `:w`. See |gloss-ai| for exactly what context a
+   buffer until you `:w`. See |argot-ai| for exactly what context a
    request carries.
 
 vim:tw=78:ts=8:noet:ft=help:norl:

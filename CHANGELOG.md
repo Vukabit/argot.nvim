@@ -1,6 +1,20 @@
 # Changelog
 
-## 0.1.0 (2026-09-01)
+## 0.1.1 (2026-09-01)
+
+Renamed from gloss.nvim to argot.nvim: four unrelated repos already carried
+the old name, while argot (the insider vocabulary of a group) was untouched
+in the editor ecosystem and names the problem rather than the mechanism.
+
+- every user-facing surface renamed: `:Argot`, `<Plug>(Argot...)`,
+  `argot.setup`, `:Telescope argot`, `argot.providers.*`, `.argot/`
+  project dirs, the `Argot*` events and highlight groups
+- migrations are automatic: the data directory moves itself from the old
+  location on first run, and in-repo files with the old `{"gloss":1}`
+  header load fine and pick up the new header on their next write
+- github.com/Vukabit/gloss.nvim redirects to Vukabit/argot.nvim
+
+## 0.1.0 (2026-09-01, as gloss.nvim)
 
 Everything in the manual works:
 
