@@ -42,8 +42,10 @@ closes. `:Gloss init -p` moves a project's glossary into the repo as
 git-friendly JSONL so teammates get it on clone.
 
 Working today: lookup, add, edit, delete, init/deinit with migration, the
-keymap layers, `:checkhealth gloss`. Landing next: cross-store fuzzy search,
-list, the projects browser, then AI providers.
+keymap layers, cross-store fuzzy search (`:Gloss search #tag words`) with
+copy/move between stores, `:Gloss list`, the projects browser, relink, and
+`:checkhealth gloss`. Landing next: AI providers, then doctor/gc/export and
+v0.1.0.
 
 ## Documentation
 

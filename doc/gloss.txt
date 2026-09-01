@@ -75,13 +75,24 @@ subcommands. [planned] ones currently report their status.
   :Gloss edit {term}   :Gloss delete {term}     *:Gloss-edit* *:Gloss-delete*
       Direct entry operations, term-completed. Delete confirms first.
 
-  :Gloss list [#tag]                            *:Gloss-list*
-      Current project's entries, optionally filtered by tag. [planned]
+  :Gloss list [{query}]                         *:Gloss-list*
+      Picker over the current project's entries; the optional query uses
+      the same grammar as search (`#tag` filters, fuzzy words). Selecting
+      an entry opens it for editing.
 
   :Gloss search [{query}]                       *:Gloss-search*
-      Fuzzy search across every store. `#tag` tokens filter exactly; other
-      tokens match terms, aliases, expansions. Selecting an entry offers
-      edit, copy to another store, move, delete. [planned]
+      Fuzzy search across every store: the current project, the global
+      dictionary, and every registered project, each result labeled with
+      its origin. `#tag` tokens filter exactly (case-insensitive); other
+      tokens fuzzy-match terms, aliases, expansions, and tags, with plain
+      substring hits in definition bodies appended after. Selecting an
+      entry offers: edit, copy to another store, move, delete, reveal
+      origin. Copy/move to a store that already has the term asks
+      overwrite / keep both / cancel ("keep both" saves as "{term}
+      (copy)"). Note: without a picker plugin overriding |vim.ui.select|
+      there is no live filtering, so pass the query argument; with
+      telescope/fzf-lua/mini.pick installed the bare form is fully
+      fuzzy-filterable.
 
   :Gloss init [-p]                              *:Gloss-init*
       Register the project. Bare: create its out-of-repo store (also
@@ -97,10 +108,20 @@ subcommands. [planned] ones currently report their status.
       deletes anything inside the repository; it prints the removal
       command instead.
 
-  :Gloss projects  :Gloss relink  :Gloss gc     *:Gloss-projects*
-      Browse registered projects; re-attach a moved repository; clean up
-      registry entries whose roots vanished (confirmed, never automatic).
-      [planned]
+  :Gloss projects                               *:Gloss-projects*
+      Browse every known project glossary from anywhere: pick a project,
+      pick an entry, act on it (same actions as search). Covers the
+      current project and all registered out-of-repo projects; other
+      repositories' in-repo glossaries live in those repositories.
+
+  :Gloss relink                                 *:Gloss-relink*
+      Re-attach a moved or re-cloned repository to its registry entry.
+      With a pending remote-matched candidate this confirms it; otherwise
+      it offers the registry list to link the current root to.
+
+  :Gloss gc                                     *:Gloss-gc*
+      Clean up registry entries whose roots vanished (confirmed, never
+      automatic). [planned]
 
   :Gloss export [{path}]  :Gloss import [{path}]  *:Gloss-export*
       JSONL out of / into the current store. [planned]

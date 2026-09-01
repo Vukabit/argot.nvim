@@ -111,7 +111,8 @@ silently rot.
 1. Scaffold, tooling, storage adapters with tests (done)
 2. Registry, init/deinit, lookup pipeline, definition buffer, keymap layers
    (done; the plugin is daily-drivable from here)
-3. Cross-DB fuzzy search with copy/move actions, list, projects
+3. Cross-DB fuzzy search with copy/move actions, list, projects, relink
+   (done)
 4. AI handler, CLI reference adapter, consent gate
 5. doctor/gc/export, hover.nvim provider, full vimdoc, v0.1.0
 
