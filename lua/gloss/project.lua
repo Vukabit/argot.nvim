@@ -341,6 +341,105 @@ function M.init_in_repo(startpath, opts)
   return { root = root, path = path, created = true, migrated = #entries }
 end
 
+--- Registry entries whose roots no longer exist on disk.
+---@return {id: string, root: string}[]
+function M.stale_entries()
+  local reg = M.load_registry()
+  local stale = {}
+  for _, id in ipairs(sorted_ids(reg)) do
+    if not vim.uv.fs_stat(reg.projects[id].root) then
+      stale[#stale + 1] = { id = id, root = reg.projects[id].root }
+    end
+  end
+  return stale
+end
+
+--- Retire registry entries (DBs are backed up, never just deleted). The
+--- caller is responsible for having confirmed each id.
+---@param ids string[]
+---@return integer removed
+function M.gc(ids)
+  local reg = M.load_registry()
+  local removed = 0
+  vim.fn.mkdir(M.data_paths().backups, "p")
+  for _, id in ipairs(ids) do
+    if reg.projects[id] then
+      local db = vim.fs.joinpath(M.data_paths().projects, id .. ".db")
+      if vim.uv.fs_stat(db) then
+        local backup =
+          vim.fs.joinpath(M.data_paths().backups, ("%s-gc-%s.db"):format(id, os.date("!%Y%m%d%H%M%S")))
+        vim.uv.fs_copyfile(db, backup)
+        for _, suffix in ipairs({ "", "-wal", "-shm" }) do
+          vim.uv.fs_unlink(db .. suffix)
+        end
+      end
+      reg.projects[id] = nil
+      removed = removed + 1
+    end
+  end
+  if removed > 0 then
+    M.save_registry(reg)
+    M.drop_handles()
+  end
+  return removed
+end
+
+--- The project store, registering the project first if needed.
+---@param startpath string?
+---@return table store, table desc
+function M.ensure_project_store(startpath)
+  local handle, desc = M.project_store({ startpath = startpath })
+  if handle then
+    return handle, desc
+  end
+  if desc.relink then
+    error("gloss: a relink is pending for this repo; run :Gloss relink first")
+  end
+  M.register(startpath)
+  handle, desc = M.project_store({ startpath = startpath })
+  if not handle then
+    error("gloss: could not open the project store (is sqlite.lua installed?)")
+  end
+  return handle, desc
+end
+
+--- Snapshot the project glossary as JSONL. Overwrites; the caller confirms.
+---@param path string
+---@param startpath string?
+---@return integer exported
+function M.export_jsonl(path, startpath)
+  local handle = M.project_store({ startpath = startpath })
+  if not handle then
+    error("gloss: this project has no glossary to export")
+  end
+  local entries = handle:list()
+  vim.uv.fs_unlink(path)
+  ensure_jsonl_file(path)
+  local out = store.open("jsonl", path)
+  for _, entry in ipairs(entries) do
+    out:upsert(entry, { touch = false })
+  end
+  return #entries
+end
+
+--- Fold a JSONL file into the project glossary (registering if needed).
+--- Timestamps are preserved; same-term entries are overwritten.
+---@param path string
+---@param startpath string?
+---@return integer imported, integer damaged skipped lines in the source
+function M.import_jsonl(path, startpath)
+  if vim.fn.filereadable(path) ~= 1 then
+    error("gloss: cannot read " .. path)
+  end
+  local src = store.open("jsonl", path)
+  local entries = src:list()
+  local handle = M.ensure_project_store(startpath)
+  for _, entry in ipairs(entries) do
+    handle:upsert(entry, { touch = false })
+  end
+  return #entries, #src.bad_lines
+end
+
 --- Reverse of init_in_repo: import the JSONL into an out-of-repo store.
 --- Never deletes anything inside the repo; returns the command instead.
 ---@param startpath string?

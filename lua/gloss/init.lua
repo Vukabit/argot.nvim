@@ -3,11 +3,16 @@
 
 local M = {}
 
+M.version = "0.1.0"
+
 --- Optional. gloss works with defaults if this is never called.
 ---@param opts table? see :h gloss.setup
 function M.setup(opts)
   require("gloss.config").setup(opts)
   require("gloss.keymaps").install()
+  -- legacy hover.nvim versions only; modern ones load the provider module
+  -- "gloss.providers.hover" via hover's own config (see :h gloss-keymaps)
+  require("gloss.hover").register()
 end
 
 --- Look up a word (default: the word under the cursor or visual selection).

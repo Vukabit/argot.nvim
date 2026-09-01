@@ -150,6 +150,74 @@ handlers.init = function(cmd)
   end
 end
 
+handlers.doctor = function()
+  require("gloss.doctor").run()
+end
+
+handlers.gc = function()
+  local project = require("gloss.project")
+  local stale = project.stale_entries()
+  if #stale == 0 then
+    vim.notify("gloss: the registry is clean")
+    return
+  end
+  local chosen = {}
+  for _, entry in ipairs(stale) do
+    local msg = ("Retire the registry entry for missing root %s? (its DB is backed up first)"):format(
+      entry.root
+    )
+    if vim.fn.confirm(msg, "&Yes\n&No", 2) == 1 then
+      chosen[#chosen + 1] = entry.id
+    end
+  end
+  local removed = project.gc(chosen)
+  vim.notify(("gloss: retired %d registry entr%s"):format(removed, removed == 1 and "y" or "ies"))
+end
+
+handlers.export = function(cmd)
+  local path = vim.fs.normalize(cmd.fargs[2] or "glossary.jsonl")
+  if vim.uv.fs_stat(path) and vim.fn.confirm(("Overwrite %s?"):format(path), "&Yes\n&No", 2) ~= 1 then
+    return
+  end
+  local ok, count = pcall(require("gloss.project").export_jsonl, path)
+  if not ok then
+    vim.notify("gloss: " .. tostring(count), vim.log.levels.ERROR)
+    return
+  end
+  vim.notify(("gloss: exported %d entries to %s"):format(count, path))
+end
+
+handlers.import = function(cmd)
+  if not cmd.fargs[2] then
+    vim.notify("gloss: :Gloss import needs a path", vim.log.levels.ERROR)
+    return
+  end
+  local ok, count, damaged = pcall(require("gloss.project").import_jsonl, vim.fs.normalize(cmd.fargs[2]))
+  if not ok then
+    vim.notify("gloss: " .. tostring(count), vim.log.levels.ERROR)
+    return
+  end
+  require("gloss.events").emit("GlossStoreChanged", {})
+  vim.notify(("gloss: imported %d entries"):format(count))
+  if damaged > 0 then
+    vim.notify(("gloss: %d damaged line(s) in the source were skipped"):format(damaged), vim.log.levels.WARN)
+  end
+end
+
+handlers.help = function(cmd)
+  local topic = cmd.fargs[2]
+  if not topic or topic == "" then
+    vim.cmd.help("gloss")
+    return
+  end
+  for _, tag in ipairs({ topic, "gloss-" .. topic, ":Gloss-" .. topic, "gloss.setup." .. topic }) do
+    if pcall(vim.cmd.help, tag) then
+      return
+    end
+  end
+  vim.notify(("gloss: no help for %q (see :h gloss)"):format(topic), vim.log.levels.WARN)
+end
+
 handlers.ai = function(cmd)
   local ai = require("gloss.ai")
   local root = (require("gloss.project").detect())
@@ -244,6 +312,15 @@ local ARG_CANDIDATES = {
   ai = function()
     return { "on", "off", "status" }
   end,
+  export = function(arglead)
+    return vim.fn.getcompletion(arglead, "file")
+  end,
+  import = function(arglead)
+    return vim.fn.getcompletion(arglead, "file")
+  end,
+  help = function()
+    return vim.fn.getcompletion("gloss", "help")
+  end,
 }
 
 ---@param arglead string
@@ -258,11 +335,18 @@ function M.complete(arglead, cmdline)
   else
     local sub = before_lead:match("^%s*(%S+)")
     local fn = ARG_CANDIDATES[sub]
-    candidates = fn and fn() or {}
+    candidates = fn and fn(arglead) or {}
   end
   return vim.tbl_filter(function(item)
     return vim.startswith(item, arglead)
   end, candidates)
+end
+
+--- The full subcommand list (the doc-drift test keeps the manual honest
+--- against this).
+---@return string[]
+function M.subcommands()
+  return vim.deepcopy(SUBCOMMANDS)
 end
 
 return M

@@ -69,11 +69,13 @@ end
 
 --- Walk the resolve chain for a word.
 ---@param word string
+---@param opts? {interactive?: boolean} false suppresses relink prompts
 ---@return GlossEntry? entry, table? store, string? scope
-function M.find(word)
+function M.find(word, opts)
   local project = require("gloss.project")
+  local interactive = not (opts and opts.interactive == false)
   for _, scope in ipairs(config.options.resolve) do
-    local handle = project.scope_store(scope, { interactive = scope == "project" })
+    local handle = project.scope_store(scope, { interactive = interactive and scope == "project" })
     if handle then
       local entry = M.policy_match(handle:list(), word, config.options.case)
       if entry then
