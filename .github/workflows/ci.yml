@@ -16,6 +16,12 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: latest
           args: --check lua plugin tests scripts
+      - name: Run selene
+        run: |
+          curl -fsSL -o /tmp/selene.zip https://github.com/Kampfkarren/selene/releases/download/0.31.0/selene-0.31.0-linux.zip
+          unzip -o /tmp/selene.zip -d /tmp/selene-bin
+          chmod +x /tmp/selene-bin/selene
+          /tmp/selene-bin/selene lua plugin tests scripts
 
   test:
     strategy:

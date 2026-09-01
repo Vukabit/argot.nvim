@@ -97,7 +97,7 @@ T["a proposal opens the review buffer marked ai; verbatim accept stays ai"] = fu
     ai = {
       provider = {
         name = "fake",
-        propose = function(req, cb)
+        propose = function(_req, cb)
           cb({ definition = "queue for poison messages", expansion = "dead letter queue", confidence = 0.9 })
         end,
       },

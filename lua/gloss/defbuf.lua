@@ -5,7 +5,6 @@
 --- Round-trip format (:h gloss-buffer): a `key: value` header block (term,
 --- expansion, aliases, tags), one blank line, then the markdown definition.
 
-local config = require("gloss.config")
 local events = require("gloss.events")
 
 local M = {}

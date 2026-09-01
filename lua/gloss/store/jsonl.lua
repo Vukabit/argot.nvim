@@ -77,11 +77,10 @@ function Store:_load()
   for lnum, line in ipairs(vim.fn.readfile(self.path)) do
     if line ~= "" then
       local ok, obj = pcall(vim.json.decode, line)
-      if not ok or type(obj) ~= "table" then
-        self.bad_lines[#self.bad_lines + 1] = { lnum = lnum, line = line }
-      elseif obj.gloss ~= nil then
+      local valid = ok and type(obj) == "table"
+      if valid and obj.gloss ~= nil then
         self.version = obj.gloss
-      elseif type(obj.term) == "string" then
+      elseif valid and type(obj.term) == "string" then
         if store.match(self.entries, obj.term) then
           self.duplicates[#self.duplicates + 1] = obj.term
         end

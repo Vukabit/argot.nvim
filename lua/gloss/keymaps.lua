@@ -60,6 +60,7 @@ function M.install()
     )
   end
   pcall(function()
+    -- selene: allow(mixed_table) -- which-key's spec format is mixed by design
     require("which-key").add({ { prefix, group = "gloss" } })
   end)
 end
