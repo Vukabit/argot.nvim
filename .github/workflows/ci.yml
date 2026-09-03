@@ -11,16 +11,18 @@ defaults:
   run:
     shell: bash
 
+# GitHub-hosted runners only: this repo is public, and fork PRs
+# must never execute on org self-hosted machines.
 jobs:
   checks:
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { os: Linux, arch: X64, neovim: stable }
-          - { os: Linux, arch: X64, neovim: nightly }
-          - { os: macOS, arch: ARM64, neovim: stable }
-    runs-on: [self-hosted, "${{ matrix.os }}", "${{ matrix.arch }}"]
+          - { runner: ubuntu-latest, neovim: stable }
+          - { runner: ubuntu-latest, neovim: nightly }
+          - { runner: macos-latest, neovim: stable }
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
       - uses: JohnnyMorganz/stylua-action@v4
